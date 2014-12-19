@@ -1,6 +1,7 @@
 {
   "branch": "master",
   "files": [
+    "toc.md",
     "simple-line-plots.md"
   ],
   "formats": {
