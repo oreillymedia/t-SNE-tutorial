@@ -1,0 +1,37 @@
+{
+  "branch": "master",
+  "files": [
+    "simple-line-plots.md"
+  ],
+  "formats": {
+    "pdf": {
+      "version": false,
+      "index": false,
+      "toc": false,
+      "syntaxhighlighting": false,
+      "show_comments": false
+    },
+    "epub": {
+      "index": false,
+      "toc": false,
+      "epubcheck": false,
+      "syntaxhighlighting": false,
+      "show_comments": false
+    },
+    "mobi": {
+      "index": false,
+      "toc": false,
+      "syntaxhighlighting": false,
+      "show_comments": false
+    },
+    "html": {
+      "index": false,
+      "toc": true,
+      "syntaxhighlighting": false,
+      "show_comments": false,
+      "consolidated": false
+    }
+  },
+  "theme": "oreillymedia/jupyter_theme",
+  "title": "ipython tutorial content"
+}
