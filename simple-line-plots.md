@@ -13,7 +13,7 @@
 - ``plt.ylabel``
 - ``plt.title``
 
-Perhaps the simplest of all plots is the visualization of a single function <span data-type="tex">$y = f(x)$</span>.
+Perhaps the simplest of all plots is the visualization of a single function <span data-type="tex">y = f(x)</span>.
 Here we will take a first look at creating a simple plot of this type.
 For all matplotlib plots, we start by creating a figure and an axes.
 
