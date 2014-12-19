@@ -34,5 +34,6 @@
     }
   },
   "theme": "oreillymedia/jupyter_theme",
-  "title": "ipython tutorial content"
+  "title": "ipython tutorial content",
+  "github_url": "https://github.com/oreillymedia/ipython-tutorial-content"
 }
