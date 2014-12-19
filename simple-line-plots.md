@@ -232,7 +232,9 @@ For transitioning between matlab-style functions and object-oriented methods, ma
 - ``plt.title()`` becomes ``ax.set_title()``
 
 
+
 <div class="author clearfix">
+   <h3>About the Author</h3>
    <img style="width: 120px;" class="author-img" src="http://cdn.oreillystatic.com/en/assets/1/eventprovider/1/_@user_180035.jpg"/>
    <blockquote class="quote">
       Jake Vanderplas is the Director of Research in the Physical Sciences at the University of Washington’s eScience Institute, where his research is primarily in the area of data-driven astronomy and astrophysics. In addition, he is a maintainer and/or frequent contributor to many open source Python projects, including scikit-learn, scipy, mpld3 and others. He occasionally blogs about Python, machine learning, data visualization, open science, and related topics at <a href="http://jakevdp.github.io">http://jakevdp.github.io</a>.
