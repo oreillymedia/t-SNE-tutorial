@@ -1,4 +1,4 @@
-## Simple Line Plots
+# Simple Line Plots
 
 
 *This recipe covers the basics of setting up a matplotlib plot, and how to create simple line plots*
