@@ -16,10 +16,19 @@
 Perhaps the simplest of all plots is the visualization of a single function <span data-type="tex">$y = f(x)$</span>.
 Here we will take a first look at creating a simple plot of this type.
 For all matplotlib plots, we start by creating a figure and an axes.
+
+First, run the code below to import the libraries we'll be using in the example:
+
+<pre data-code-language="python" data-executable="true" data-type="programlisting">
+%matplotlib inline
+import numpy as np
+import matplotlib.pyplot as plt
+</pre>
+
 In their simplest form, a figure and axes can be created as follows:
 
 
-<pre data-code-language="bash" data-executable="true" data-type="programlisting">
+<pre data-code-language="python" data-executable="true" data-type="programlisting">
 fig = plt.figure()
 ax = plt.axes()
 </pre>
@@ -32,7 +41,7 @@ Through this book, we'll commonly use the variable name ``fig`` to refer to a fi
 Once we have created an axes, we can use the ``ax.plot`` function to plot some data. Let's start with a simple sine wave:
 
 
-<pre data-code-language="bash" data-executable="true" data-type="programlisting">
+<pre data-code-language="python" data-executable="true" data-type="programlisting">
 fig = plt.figure()
 ax = plt.axes()
 
@@ -45,7 +54,7 @@ Alternatively, we can use the pylab interface and let the figure and axes be cre
 (See the sidebar on page X for a discussion of these two interfaces)
 
 
-<pre data-code-language="bash" data-executable="true" data-type="programlisting">
+<pre data-code-language="python" data-executable="true" data-type="programlisting">
 plt.plot(x, np.sin(x));
 </pre>
 
@@ -53,7 +62,7 @@ plt.plot(x, np.sin(x));
 If we want to create a single figure with multiple lines, we can simply call the ``plot`` function multiple times:
 
 
-<pre data-code-language="bash" data-executable="true" data-type="programlisting">
+<pre data-code-language="python" data-executable="true" data-type="programlisting">
 plt.plot(x, np.sin(x*2));
 plt.plot(x, np.sin(x));
 </pre>
@@ -72,13 +81,6 @@ The color can be specified in a variety of ways, which we'll show below:
 
 
 <pre data-code-language="python" data-executable="true" data-type="programlisting">
-%pylab inline
-
-%matplotlib inline
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-
 plt.plot(x, np.sin(x - 0), color='blue')        # specify color by name
 plt.plot(x, np.sin(x - 1), color='g')           # short color code (works for rgb & cmyk)
 plt.plot(x, np.sin(x - 2), color='0.75')        # Greyscale between 0 and 1
