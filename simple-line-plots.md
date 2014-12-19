@@ -23,6 +23,7 @@ First, run the code below to import the libraries we'll be using in the example:
 %matplotlib inline
 import numpy as np
 import matplotlib.pyplot as plt
+print("Dependencies loaded...")
 </pre>
 
 In their simplest form, a figure and axes can be created as follows:
