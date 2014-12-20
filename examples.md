@@ -2,8 +2,9 @@
 
 This provides some specific examples of how to mark things up.  
 
-## Markdown or HTMLBook
+## Markdown
 
+Here are a few examples of how to write in [markdown](http://docs.atlas.oreilly.com/ch13.html#markdownref) for Atlas.  
 
 ### Making a Python program executable
 
@@ -18,7 +19,14 @@ Here's how to make a program executable:
 ### Embedding an equation
 
 
+Wrap Latex equations in a `<span data-type="tex"> ... </span>`.
+
+<span data-type="tex">a^2 + b^2 = c^2</span>
+
+
 ## AsciiDoc
+
+Here are a few examples of writing in [AsciiDoc](http://docs.atlas.oreilly.com/ch12.html#asciidocref).
 
 ### Making a program executable
 
