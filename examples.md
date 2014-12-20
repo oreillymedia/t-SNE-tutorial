@@ -19,11 +19,9 @@ Here's how to make a program executable:
 ### Embedding an equation
 
 
-Wrap Latex equations in a `<span data-type="tex"> ... </span>`.
+Wrap Latex equations in a `<span data-type="tex">$$ your latex equation here $$</span>`.  For example:
 
 <span data-type="tex">$$a^2 + b^2 = c^2$$</span>
-
-<span class="math-tex" data-type="tex">\(a^2 + b^2 = c^2\)</span>
 
 
 ## AsciiDoc
