@@ -21,7 +21,9 @@ Here's how to make a program executable:
 
 Wrap Latex equations in a `<span data-type="tex"> ... </span>`.
 
-<span data-type="tex">a^2 + b^2 = c^2</span>
+<span data-type="tex">$$a^2 + b^2 = c^2$$</span>
+
+<span class="math-tex" data-type="tex">\(a^2 + b^2 = c^2\)</span>
 
 
 ## AsciiDoc
