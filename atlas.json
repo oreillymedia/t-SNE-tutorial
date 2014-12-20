@@ -1,9 +1,7 @@
 {
   "branch": "master",
   "files": [
-    "toc.md",
-    "simple-line-plots.md",
-    "examples-md.md"
+    "test.html"
   ],
   "formats": {
     "pdf": {
@@ -28,13 +26,13 @@
     },
     "html": {
       "index": false,
-      "toc": true,
-      "syntaxhighlighting": false,
+      "toc": false,
+      "syntaxhighlighting": true,
       "show_comments": false,
       "consolidated": false
     }
   },
   "theme": "oreillymedia/jupyter_theme",
-  "title": "ipython tutorial content",
+  "title": "An illustrated introduction to the t-SNE algorithm",
   "github_url": "https://github.com/oreillymedia/ipython-tutorial-content"
 }
