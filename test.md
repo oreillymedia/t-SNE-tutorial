@@ -1,15 +1,15 @@
-# Chapter Title
+# Markdown test
 
-Chapter text begins here.
+This is some text.
 
-## Top-Level Heading
+Here is an equation:
 
-Within a chapter, the first and highest heading level uses two pound signs.
+<span class="math-tex" data-type="tex">\(x = {-b \pm \sqrt{b^2-4ac} \over 2a}\)</span>
 
-### Second-Level Heading
+and some code:
 
-The second-level heading uses three pound signs.
+<pre data-code-language="python" data-executable="true" data-type="programlisting">
+print('hello world!')
+print('hello world, again!')
+</pre>
 
-#### Third-level heading
-
-The third-level heading uses four pound signs.
