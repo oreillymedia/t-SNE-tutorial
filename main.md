@@ -8,6 +8,8 @@ Hello world!
 import numpy as np
 from numpy.linalg import norm
 import sklearn
+from sklearn.manifold import TSNE
+from sklearn.datasets import load_digits
 import matplotlib.pyplot as plt
 %matplotlib inline
 </pre>
@@ -15,12 +17,6 @@ import matplotlib.pyplot as plt
 Let's test an inline equation: <span class="math-tex" data-type="tex">$\pi=3.14$</span>. And now a block equation:
 
 <span class="math-tex" data-type="tex">$$\int_0^1 f(x)dx$$</span>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-from sklearn.manifold import TSNE
-</pre>
 
 <pre data-code-language="python"
      data-executable="true"
@@ -45,18 +41,30 @@ def random_points_sphere(n_samples, n_dims, radius=1., width=0.):
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-x0 = random_points_sphere(n_samples // 2, 3,
-                          radius=1., width=.25)
-x1 = random_points_sphere(n_samples // 2, 3,
-                          radius=2., width=.25)
+x = np.empty((n_samples, n_dims))
+x[:n_samples // 2,:] = random_points_sphere(n_samples // 2, n_dims,
+                                            radius=1., width=.25)
+x[n_samples // 2:,:] = random_points_sphere(n_samples // 2, n_dims,
+                                            radius=2., width=.25)
+clusters = np.hstack((np.zeros(n_samples // 2, dtype=np.int),
+                      np.ones(n_samples // 2, dtype=np.int)))
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
+colors = np.array([55,126,184,
+                    228,26,28]).reshape((2, 3))/255.
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+plt.figure(figsize=(6, 6))
 ax = plt.subplot(aspect='equal')
-ax.plot(x0[:,0], x0[:,1], '.');
-ax.plot(x1[:,0], x1[:,1], '.');
+ax.scatter(x[:,0], x[:,1], lw=0, s=40,
+           c=colors[clusters]);
+ax.axis('tight');
 ax.axis('off');
 </pre>
 
@@ -64,29 +72,45 @@ ax.axis('off');
      data-executable="true"
      data-type="programlisting">
 tsne = TSNE()
-y = tsne.fit_transform(np.vstack((x0, x1)))
+y = tsne.fit_transform(x)
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
+plt.figure(figsize=(6, 6))
 ax = plt.subplot(aspect='equal')
-ax.scatter(y[:,0], y[:,1], lw=0,
-            c=np.hstack((np.zeros(n_samples // 2),
-                       np.ones(n_samples // 2))));
+ax.scatter(y[:,0], y[:,1], lw=0, s=40,
+            c=colors[clusters]);
+ax.axis('tight');
 ax.axis('off');
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-
+digits = load_digits()
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
+tsne = TSNE()
+Y = tsne.fit_transform(digits.data)
+</pre>
 
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+plt.figure(figsize=(6, 6))
+ax = plt.subplot(aspect='equal')
+ax.scatter(Y[:,0], Y[:,1], lw=0, s=40,
+            c=digits.target);
+for i in range(10):
+    xtext, ytext = Y[digits.target == i, :].mean(axis=0)
+    ax.text(xtext-2, ytext+1, str(i), fontsize=24, color='#333333')
+ax.axis('tight');
+ax.axis('off');
 </pre>
 
 Equations:
