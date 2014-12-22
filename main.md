@@ -1,22 +1,47 @@
 # An illustrated introduction to t-SNE
 
-Hello world!
+Some imports.
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
 import numpy as np
+from numpy import linalg
 from numpy.linalg import norm
 import sklearn
+from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.datasets import load_digits
+from sklearn.metrics.pairwise import pairwise_distances
+from scipy.spatial.distance import squareform
 import matplotlib.pyplot as plt
+import matplotlib.patheffects as PathEffects
+import matplotlib
+matplotlib.rcParams.update({'font.size': 22})
 %matplotlib inline
 </pre>
 
-Let's test an inline equation: <span class="math-tex" data-type="tex">$\pi=3.14$</span>. And now a block equation:
+Illustration on digit dataset.
 
-<span class="math-tex" data-type="tex">$$\int_0^1 f(x)dx$$</span>
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+digits = load_digits()
+tsne = TSNE()
+Y = tsne.fit_transform(digits.data)
+plt.figure(figsize=(6, 6))
+ax = plt.subplot(aspect='equal')
+ax.scatter(Y[:,0], Y[:,1], lw=0, s=40,
+            c=digits.target);
+for i in range(10):
+    xtext, ytext = Y[digits.target == i, :].mean(axis=0)
+    txt = ax.text(xtext, ytext, str(i), fontsize=24)
+    txt.set_path_effects([
+        PathEffects.Stroke(linewidth=5, foreground="w"),
+        PathEffects.Normal()])
+ax.axis('tight');
+ax.axis('off');
+</pre>
 
 <pre data-code-language="python"
      data-executable="true"
@@ -60,12 +85,25 @@ colors = np.array([55,126,184,
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-plt.figure(figsize=(6, 6))
-ax = plt.subplot(aspect='equal')
-ax.scatter(x[:,0], x[:,1], lw=0, s=40,
-           c=colors[clusters]);
-ax.axis('tight');
-ax.axis('off');
+def scatter(x):
+    plt.figure(figsize=(6, 6))
+    ax = plt.subplot(aspect='equal')
+    ax.scatter(x[:,0], x[:,1], lw=0, s=40,
+               c=colors[clusters]);
+    ax.axis('tight');
+    ax.axis('off');
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+scatter(x)
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+scatter(PCA().fit_transform(x))
 </pre>
 
 <pre data-code-language="python"
@@ -73,44 +111,129 @@ ax.axis('off');
      data-type="programlisting">
 tsne = TSNE()
 y = tsne.fit_transform(x)
+scatter(y)
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-plt.figure(figsize=(6, 6))
-ax = plt.subplot(aspect='equal')
-ax.scatter(y[:,0], y[:,1], lw=0, s=40,
-            c=colors[clusters]);
-ax.axis('tight');
-ax.axis('off');
+distances = pairwise_distances(x, squared=True)
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-digits = load_digits()
+distances.shape
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+from sklearn.manifold.t_sne import (_joint_probabilities,
+                                    _kl_divergence)
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+def _joint_probabilities_constant_sigma(D, sigma):
+    P = np.exp(-D**2/2*sigma**2)
+    P /= np.sum(P, axis=1)
+    return P
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+D = pairwise_distances(x, squared=True)
+P_constant = _joint_probabilities_constant_sigma(D, 5.)
+P_binary = _joint_probabilities(D, 30., False)
+P_binary_s = squareform(P_binary)
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+plt.figure(figsize=(12, 4))
+
+plt.subplot(131)
+plt.imshow(D, interpolation='none')
+plt.axis('off')
+plt.title("Distance matrix", fontdict={'fontsize': 16})
+
+plt.subplot(132)
+plt.imshow(P_constant, interpolation='none')
+plt.axis('off')
+plt.title("$p_{j|i}$ (constant sigma)", fontdict={'fontsize': 16})
+
+plt.subplot(133)
+plt.imshow(P_binary_s, interpolation='none')
+plt.axis('off')
+plt.title("$p_{j|i}$ (binary search sigma)", fontdict={'fontsize': 16});
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+positions = []
+def _gradient_descent(objective, p0, it, n_iter, n_iter_without_progress=30,
+                      momentum=0.5, learning_rate=1000.0, min_gain=0.01,
+                      min_grad_norm=1e-7, min_error_diff=1e-7, verbose=0,
+                      args=[]):
+    p = p0.copy().ravel()
+    update = np.zeros_like(p)
+    gains = np.ones_like(p)
+    error = np.finfo(np.float).max
+    best_error = np.finfo(np.float).max
+    best_iter = 0
+
+    for i in range(it, n_iter):
+        new_error, grad = objective(p, *args)
+        error_diff = np.abs(new_error - error)
+        error = new_error
+        grad_norm = linalg.norm(grad)
+
+        if error < best_error:
+            best_error = error
+            best_iter = i
+        elif i - best_iter > n_iter_without_progress:
+            break
+        if min_grad_norm >= grad_norm:
+            break
+        if min_error_diff >= error_diff:
+            break
+
+        inc = update * grad >= 0.0
+        dec = np.invert(inc)
+        gains[inc] += 0.05
+        gains[dec] *= 0.95
+        np.clip(gains, min_gain, np.inf)
+        grad *= gains
+        update = momentum * update - learning_rate * grad
+        p += update
+    
+    positions.append(p)
+    return p, error, i
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+sklearn.manifold.t_sne._gradient_descent = _gradient_descent
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
 tsne = TSNE()
-Y = tsne.fit_transform(digits.data)
+y = tsne.fit_transform(x)
+scatter(y)
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-plt.figure(figsize=(6, 6))
-ax = plt.subplot(aspect='equal')
-ax.scatter(Y[:,0], Y[:,1], lw=0, s=40,
-            c=digits.target);
-for i in range(10):
-    xtext, ytext = Y[digits.target == i, :].mean(axis=0)
-    ax.text(xtext-2, ytext+1, str(i), fontsize=24, color='#333333')
-ax.axis('tight');
-ax.axis('off');
+
 </pre>
 
 Equations:
