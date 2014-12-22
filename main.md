@@ -13,7 +13,12 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.datasets import load_digits
 from sklearn.metrics.pairwise import pairwise_distances
-from scipy.spatial.distance import squareform
+from scipy.spatial.distance import squareform, pdist
+from sklearn.preprocessing import scale
+from sklearn.manifold.t_sne import (_joint_probabilities,
+                                    _kl_divergence)
+from sklearn.utils.extmath import _ravel
+MACHINE_EPSILON = np.finfo(np.double).eps
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 import matplotlib
@@ -28,13 +33,13 @@ Illustration on digit dataset.
      data-type="programlisting">
 digits = load_digits()
 tsne = TSNE()
-Y = tsne.fit_transform(digits.data)
+digits_proj = tsne.fit_transform(digits.data)
 plt.figure(figsize=(6, 6))
 ax = plt.subplot(aspect='equal')
-ax.scatter(Y[:,0], Y[:,1], lw=0, s=40,
+ax.scatter(digits_proj[:,0], digits_proj[:,1], lw=0, s=40,
             c=digits.target);
 for i in range(10):
-    xtext, ytext = Y[digits.target == i, :].mean(axis=0)
+    xtext, ytext = digits_proj[digits.target == i, :].mean(axis=0)
     txt = ax.text(xtext, ytext, str(i), fontsize=24)
     txt.set_path_effects([
         PathEffects.Stroke(linewidth=5, foreground="w"),
@@ -53,84 +58,35 @@ n_dims = 3
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-def random_points_sphere(n_samples, n_dims, radius=1., width=0.):
-    x = np.random.normal(size=(n_samples, n_dims))
-    widths = width * np.random.uniform(size=(n_samples, 1), 
-                                       low=-width // 2, 
-                                       high=width // 2)
-    a = (radius + widths) / norm(x, axis=1)[:, None]
-    x *= a
-    return x
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-x = np.empty((n_samples, n_dims))
-x[:n_samples // 2,:] = random_points_sphere(n_samples // 2, n_dims,
-                                            radius=1., width=.25)
-x[n_samples // 2:,:] = random_points_sphere(n_samples // 2, n_dims,
-                                            radius=2., width=.25)
-clusters = np.hstack((np.zeros(n_samples // 2, dtype=np.int),
-                      np.ones(n_samples // 2, dtype=np.int)))
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-colors = np.array([55,126,184,
-                    228,26,28]).reshape((2, 3))/255.
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-def scatter(x):
-    plt.figure(figsize=(6, 6))
+def scatter(x, colors):
+    f = plt.figure(figsize=(8, 8))
     ax = plt.subplot(aspect='equal')
-    ax.scatter(x[:,0], x[:,1], lw=0, s=40,
-               c=colors[clusters]);
-    ax.axis('tight');
+    sc = ax.scatter(x[:,0], x[:,1], lw=0, s=40,
+               c=colors.astype(np.int));
+    plt.xlim(-25, 25);
+    plt.ylim(-25, 25);
     ax.axis('off');
+
+    return f, ax, sc
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-scatter(x)
+X = np.vstack([digits.data[digits.target==i] for i in range(10)])
+y = np.hstack([digits.target[digits.target==i] for i in range(10)])
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-scatter(PCA().fit_transform(x))
+X = scale(X)
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-tsne = TSNE()
-y = tsne.fit_transform(x)
-scatter(y)
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-distances = pairwise_distances(x, squared=True)
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-distances.shape
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-from sklearn.manifold.t_sne import (_joint_probabilities,
-                                    _kl_divergence)
+distances = pairwise_distances(X, squared=True)
 </pre>
 
 <pre data-code-language="python"
@@ -145,8 +101,8 @@ def _joint_probabilities_constant_sigma(D, sigma):
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-D = pairwise_distances(x, squared=True)
-P_constant = _joint_probabilities_constant_sigma(D, 5.)
+D = pairwise_distances(X, squared=True)
+P_constant = _joint_probabilities_constant_sigma(D, .002)
 P_binary = _joint_probabilities(D, 30., False)
 P_binary_s = squareform(P_binary)
 </pre>
@@ -172,6 +128,43 @@ plt.axis('off')
 plt.title("$p_{j|i}$ (binary search sigma)", fontdict={'fontsize': 16});
 </pre>
 
+positions = []
+def _kl_divergence(params, P, alpha, n_samples, n_components):
+    X_embedded = params.reshape(n_samples, n_components)
+
+```
+positions.append(X_embedded.copy())
+
+# Q is a heavy-tailed distribution: Student's t-distribution
+n = pdist(X_embedded, "sqeuclidean")
+n += 1.
+n /= alpha
+n **= (alpha + 1.0) / -2.0
+Q = np.maximum(n / (2.0 * np.sum(n)), MACHINE_EPSILON)
+
+# Objective: C (Kullback-Leibler divergence of P and Q)
+kl_divergence = 2.0 * np.dot(P, np.log(P / Q))
+
+# Gradient: dC/dY
+grad = np.ndarray((n_samples, n_components))
+PQd = squareform((P - Q) * n)
+for i in range(n_samples):
+    np.dot(_ravel(PQd[i]), X_embedded[i] - X_embedded, out=grad[i])
+grad = grad.ravel()
+c = 2.0 * (alpha + 1.0) / alpha
+grad *= c
+
+return kl_divergence, grad
+```
+
+sklearn.manifold.t_sne._kl_divergence = _kl_divergence
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+import sklearn.manifold.t_sne
+</pre>
+
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
@@ -188,6 +181,7 @@ def _gradient_descent(objective, p0, it, n_iter, n_iter_without_progress=30,
     best_iter = 0
 
     for i in range(it, n_iter):
+        positions.append(p.copy())
         new_error, grad = objective(p, *args)
         error_diff = np.abs(new_error - error)
         error = new_error
@@ -211,14 +205,8 @@ def _gradient_descent(objective, p0, it, n_iter, n_iter_without_progress=30,
         grad *= gains
         update = momentum * update - learning_rate * grad
         p += update
-    
-    positions.append(p)
-    return p, error, i
-</pre>
 
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
+    return p, error, i
 sklearn.manifold.t_sne._gradient_descent = _gradient_descent
 </pre>
 
@@ -226,15 +214,63 @@ sklearn.manifold.t_sne._gradient_descent = _gradient_descent
      data-executable="true"
      data-type="programlisting">
 tsne = TSNE()
-y = tsne.fit_transform(x)
-scatter(y)
+X_proj = tsne.fit_transform(X)
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-
+positions[0]
 </pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+positions_arr = np.dstack(position.reshape(-1, 2) 
+                          for position in positions)
+</pre>
+
+from IPython.html.widgets import interact
+@interact(i=(0, positions_arr.shape[2]-1, 1))
+def draw(i=0):
+    sc = scatter(positions_arr[..., i], y);
+    if i < 50:
+        plt.title("Early exageration")
+    elif i < 150:
+        plt.title("Phase 2")
+    else:
+        plt.title("Final phase")
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+f, ax, sc = scatter(positions_arr[..., -1], y);
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+from moviepy.video.io.bindings import mplfig_to_npimage
+import moviepy.editor as mpy
+
+n = positions_arr.shape[2]
+
+def make_frame_mpl(t):
+    i = int(t*40)
+    sc.set_offsets(positions_arr[..., i])
+    """if i < 50:
+        ax.set_title("Early exageration")
+    elif i < 150:
+        ax.set_title("Phase 2")
+    else:
+        ax.set_title("Final phase")"""
+    return mplfig_to_npimage(f)
+
+animation = mpy.VideoClip(make_frame_mpl, duration=n/40.)
+animation.write_gif("anim.gif", fps=20)
+</pre>
+
+<img src="anim.gif" />
 
 Equations:
 
