@@ -34,6 +34,11 @@ Illustration on digit dataset.
 digits = load_digits()
 tsne = TSNE()
 digits_proj = tsne.fit_transform(digits.data)
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
 plt.figure(figsize=(6, 6))
 ax = plt.subplot(aspect='equal')
 ax.scatter(digits_proj[:,0], digits_proj[:,1], lw=0, s=40,
@@ -62,12 +67,21 @@ def scatter(x, colors):
     f = plt.figure(figsize=(8, 8))
     ax = plt.subplot(aspect='equal')
     sc = ax.scatter(x[:,0], x[:,1], lw=0, s=40,
-               c=colors.astype(np.int));
+                    c=colors.astype(np.int));
     plt.xlim(-25, 25);
     plt.ylim(-25, 25);
     ax.axis('off');
+    
+    txts = []
+    for i in range(10):
+        xtext, ytext = np.median(x[y == i, :], axis=0)
+        txt = ax.text(xtext, ytext, str(i), fontsize=24)
+        txt.set_path_effects([
+            PathEffects.Stroke(linewidth=5, foreground="w"),
+            PathEffects.Normal()])
+        txts.append(txt)
 
-    return f, ax, sc
+    return f, ax, sc, txts
 </pre>
 
 <pre data-code-language="python"
@@ -128,43 +142,6 @@ plt.axis('off')
 plt.title("$p_{j|i}$ (binary search sigma)", fontdict={'fontsize': 16});
 </pre>
 
-positions = []
-def _kl_divergence(params, P, alpha, n_samples, n_components):
-    X_embedded = params.reshape(n_samples, n_components)
-
-```
-positions.append(X_embedded.copy())
-
-# Q is a heavy-tailed distribution: Student's t-distribution
-n = pdist(X_embedded, "sqeuclidean")
-n += 1.
-n /= alpha
-n **= (alpha + 1.0) / -2.0
-Q = np.maximum(n / (2.0 * np.sum(n)), MACHINE_EPSILON)
-
-# Objective: C (Kullback-Leibler divergence of P and Q)
-kl_divergence = 2.0 * np.dot(P, np.log(P / Q))
-
-# Gradient: dC/dY
-grad = np.ndarray((n_samples, n_components))
-PQd = squareform((P - Q) * n)
-for i in range(n_samples):
-    np.dot(_ravel(PQd[i]), X_embedded[i] - X_embedded, out=grad[i])
-grad = grad.ravel()
-c = 2.0 * (alpha + 1.0) / alpha
-grad *= c
-
-return kl_divergence, grad
-```
-
-sklearn.manifold.t_sne._kl_divergence = _kl_divergence
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-import sklearn.manifold.t_sne
-</pre>
-
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
@@ -220,31 +197,20 @@ X_proj = tsne.fit_transform(X)
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-positions[0]
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
 positions_arr = np.dstack(position.reshape(-1, 2) 
                           for position in positions)
 </pre>
 
-from IPython.html.widgets import interact
-@interact(i=(0, positions_arr.shape[2]-1, 1))
-def draw(i=0):
-    sc = scatter(positions_arr[..., i], y);
-    if i < 50:
-        plt.title("Early exageration")
-    elif i < 150:
-        plt.title("Phase 2")
-    else:
-        plt.title("Final phase")
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+f, ax, sc, txt = scatter(positions_arr[..., -1], y);
+</pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-f, ax, sc = scatter(positions_arr[..., -1], y);
+y
 </pre>
 
 <pre data-code-language="python"
@@ -253,20 +219,20 @@ f, ax, sc = scatter(positions_arr[..., -1], y);
 from moviepy.video.io.bindings import mplfig_to_npimage
 import moviepy.editor as mpy
 
-n = positions_arr.shape[2]
+f, ax, sc, txts = scatter(positions_arr[..., -1], y);
 
 def make_frame_mpl(t):
     i = int(t*40)
-    sc.set_offsets(positions_arr[..., i])
-    """if i < 50:
-        ax.set_title("Early exageration")
-    elif i < 150:
-        ax.set_title("Phase 2")
-    else:
-        ax.set_title("Final phase")"""
+    x = positions_arr[..., i]
+    sc.set_offsets(x)
+    for j, txt in zip(range(10), txts):
+        xtext, ytext = np.median(x[y == j, :], axis=0)
+        txt.set_x(xtext)
+        txt.set_y(ytext)
     return mplfig_to_npimage(f)
 
-animation = mpy.VideoClip(make_frame_mpl, duration=n/40.)
+animation = mpy.VideoClip(make_frame_mpl, 
+                          duration=positions_arr.shape[2]/40.)
 animation.write_gif("anim.gif", fps=20)
 </pre>
 
