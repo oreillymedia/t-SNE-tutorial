@@ -1,7 +1,7 @@
 {
   "branch": "master",
   "files": [
-    "index.ipynb"
+    "index.md"
   ],
   "formats": {
     "pdf": {
