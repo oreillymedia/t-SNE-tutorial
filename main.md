@@ -8,22 +8,29 @@ Some imports.
 import numpy as np
 from numpy import linalg
 from numpy.linalg import norm
+
+from scipy.spatial.distance import squareform, pdist
+
 import sklearn
-from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.datasets import load_digits
-from sklearn.metrics.pairwise import pairwise_distances
-from scipy.spatial.distance import squareform, pdist
 from sklearn.preprocessing import scale
+from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.manifold.t_sne import (_joint_probabilities,
                                     _kl_divergence)
 from sklearn.utils.extmath import _ravel
-MACHINE_EPSILON = np.finfo(np.double).eps
+
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 import matplotlib
-matplotlib.rcParams.update({'font.size': 22})
+
+from moviepy.video.io.bindings import mplfig_to_npimage
+import moviepy.editor as mpy
+
 %matplotlib inline
+
+matplotlib.rcParams.update({'font.size': 22})
+MACHINE_EPSILON = np.finfo(np.double).eps
 </pre>
 
 Illustration on digit dataset.
@@ -34,23 +41,6 @@ Illustration on digit dataset.
 digits = load_digits()
 tsne = TSNE()
 digits_proj = tsne.fit_transform(digits.data)
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-plt.figure(figsize=(6, 6))
-ax = plt.subplot(aspect='equal')
-ax.scatter(digits_proj[:,0], digits_proj[:,1], lw=0, s=40,
-            c=digits.target);
-for i in range(10):
-    xtext, ytext = digits_proj[digits.target == i, :].mean(axis=0)
-    txt = ax.text(xtext, ytext, str(i), fontsize=24)
-    txt.set_path_effects([
-        PathEffects.Stroke(linewidth=5, foreground="w"),
-        PathEffects.Normal()])
-ax.axis('tight');
-ax.axis('off');
 </pre>
 
 <pre data-code-language="python"
@@ -71,7 +61,7 @@ def scatter(x, colors):
     plt.xlim(-25, 25);
     plt.ylim(-25, 25);
     ax.axis('off');
-    
+
     txts = []
     for i in range(10):
         xtext, ytext = np.median(x[y == i, :], axis=0)
@@ -197,33 +187,18 @@ X_proj = tsne.fit_transform(X)
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-positions_arr = np.dstack(position.reshape(-1, 2) 
-                          for position in positions)
+X_iter = np.dstack(position.reshape(-1, 2)
+                   for position in positions)
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-f, ax, sc, txt = scatter(positions_arr[..., -1], y);
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-y
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-from moviepy.video.io.bindings import mplfig_to_npimage
-import moviepy.editor as mpy
-
-f, ax, sc, txts = scatter(positions_arr[..., -1], y);
+f, ax, sc, txts = scatter(X_iter[..., -1], y);
 
 def make_frame_mpl(t):
     i = int(t*40)
-    x = positions_arr[..., i]
+    x = X_iter[..., i]
     sc.set_offsets(x)
     for j, txt in zip(range(10), txts):
         xtext, ytext = np.median(x[y == j, :], axis=0)
@@ -231,12 +206,21 @@ def make_frame_mpl(t):
         txt.set_y(ytext)
     return mplfig_to_npimage(f)
 
-animation = mpy.VideoClip(make_frame_mpl, 
-                          duration=positions_arr.shape[2]/40.)
+animation = mpy.VideoClip(make_frame_mpl,
+                          duration=X_iter.shape[2]/40.)
 animation.write_gif("anim.gif", fps=20)
 </pre>
 
-<img src="anim.gif" />
+<!--<img src="anim.gif" />-->
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+n = 1. / (pdist(X_iter[..., 200], "sqeuclidean") + 1)
+Q = n / (2.0 * np.sum(n))
+Q = squareform(Q)
+plt.imshow(Q);
+</pre>
 
 Equations:
 
