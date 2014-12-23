@@ -1,21 +1,27 @@
 # An illustrated introduction to the t-SNE algorithm
 
-INTRO
+In the Big Data era, data is not only becoming bigger and bigger; it is also becoming more and more complex. This translates into a spectacular increase of the dimensionality of the data. For example, the dimensionality of a set of images is the number of pixels in any image, which ranges from thousands to millions.
 
-* complex, high-dimensional data
-* need to visualize
-* hard to visualize more than 3 dimensions
-* sometimes, high-dimensional data only contains a few relevant dimensions
-* automatically discovering this structure = manifold learning
-* many algorithms exist
-* one of the state-of-the-art algo is t-SNE, invented in 2008 by ** and Hinton
-* it has been used in ** and **
-* it is implemented in scikit-learn, the leading machine learning platforms in python
-* in this post, we'll introduce and illustrate the main mathematical ideas underlying the algorithm
-* we'll be using a famous data example throughout this post: the handwritten digits dataset (put screenshot). number of features? number of samples?
-* demo: otuput of t-SNE on the dataset
+Computers have no problem processing that many dimensions. However, we humans are limited to three dimensions. Computers still need us (thankfully), so we often need ways to effectively visualize high-dimensional data before handing it over to the computer.
 
-The ancestor: SNE
+How can we possibly reduce the dimensionality of a dataset from an arbitrary number to two or three, which is what we're doing when we visualize data on a screen?
+
+The answer lies in the observation that many real-world datasets have a low intrinsic dimensionality, even though they're embedded in a high-dimensional space. Imagine that you're shooting a panoramic landscape with your camera, while rotating around yourself. We can consider every picture as a point in a 16,000,000-dimensional space (assuming a 16 megapixels camera). Yet, the set of pictures approximately lie on a three-dimensional space (yaw, pitch, roll). This low-dimensional space is embedded in the high-dimensional space in a complex, nonlinear way. Hidden in the data, this structure can only be recovered with specific mathematical methods.
+
+This is the topic of manifold learning, also called nonlinear dimensionality reduction, a branch of machine learning (more specifically, *unsupervised learning*). It is still an active area of research today to develop algorithms that can automatically recover a hidden structure in a high-dimensional dataset.
+
+This post is an introduction to a popular dimensonality reduction algorithm: **t-distributed stochastic neighbor embedding (t-SNE)**. Developed by Laurens van der Maaten and Geoffrey Hinton (now working at Google), this algorithm has been successfully applied to many real-world datasets. Here, we'll see the key concepts of the method, when applied to a toy dataset (handwritten digits). We'll use Python and the scikit-learn library.
+
+
+## Visualizing handwritten digits.
+
+(detail the dataset, nsamples, ndimensions)
+(final output of tSNE)
+
+
+## Mathematical framework
+
+Let's explain how the algorithm works. First, a few definitions. A **data point** is a point in the original space $\mathbb{R}^D$.
 
 * data points = original points in R^D
 * map points = target points in R^2
@@ -25,20 +31,15 @@ The ancestor: SNE
 * here is how we express this idea
 * we start from the distance matrix
 * now, we consider a Gaussian distribution centered on each data point, with a given variance
-* idem for the map points, but with a fixed variance
+* idem for the map points, but with a t-Student distribution instead (more on that later)
 * we define a similarity matrix for the data points and the map points: sim(i,j) is roughly speaking the proba that j belongs to distrib i. close = high, far = low
 * screenshot of the sim matrix
 * idem for the map points: we want the two sim matrices to be close
 * physical analogy: n-body problem with springs and strength (stifness?) depending on the mismatch. if sim(i,j) the same for data points and map points, force=0. if i and j are too far apart while they have similar sim, they are attracted. if they are too close while they have different sim, they are repelled
-* plot (sim_map(i, j), strength) for all distances between the map points (i,j)
+* there is a trick in the choice of the distribution. We have chosen a Gaussian distribution for the data points. Why not the same for map points? Answer = scaling of the n-dim ball volume. When reducing dimension, there is an inbalance in the distances between similar points and dissimilar points. There is too much attraction between the points (original SNE). The authors chose to compensate this inbalance by taking a non-Gaussian distribution with a much heavier tail. This allows dissimilar points to be much further away in the 2D space. (plot Gaussian vs Cauchy distrib)
 * we let the system evolve according to law of physics
-* mathematically, what we're doing is that we minimize the KL divergence between the sim matrices. (formula of KL and its gradient) gradient descent. it is remarkable that this sound mathematical model corresponds to this intuitive physical formulation.
-* screenshot from the paper [Hinton, Roweis, 2002]
-
-Limitations of SNE
-
-* First, it is not symmetric, this is solved by considering **
-* More importantly,
+* mathematically, what we're doing is that we minimize the KL divergence between the sim matrices. (formula of KL and its gradient) gradient descent. it is remarkable that this sound mathematical model corresponds to this intuitive physical formulation. (formula of SNE KL as well)
+animation
 
 Some imports.
 
@@ -311,7 +312,7 @@ for i, D in enumerate((2, 5, 10)):
     ax.set_xlabel('Ball radius')
     if i == 0:
         ax.set_ylabel('Distance from origin')
-    ax.hist(norm(points, axis=1), 
+    ax.hist(norm(points, axis=1),
             bins=np.linspace(0., 1., 50))
     ax.set_title('D=%d' % D, loc='left')
 </pre>
