@@ -31,6 +31,8 @@ from moviepy.video.io.bindings import mplfig_to_npimage
 import moviepy.editor as mpy
 
 from IPython.display import Image
+from IPython.display import HTML
+from base64 import b64encode
 
 # DRAW A FIGURE WITH MATPLOTLIB
 
@@ -50,9 +52,14 @@ def make_frame_mpl(t):
     return mplfig_to_npimage(fig_mpl) # RGB image of the figure
 
 animation =mpy.VideoClip(make_frame_mpl, duration=duration)
-animation.write_gif("sinc_mpl.gif", fps=20)
+animation.write_videofile("sinc_mpl.mp4", fps=20)
 
-Image(filename='sinc_mpl.gif')
+
+video = open("/home/pyxie/sinc_mpl.mp4", "rb").read()
+video_encoded = b64encode(video)
+video_tag = '<video controls alt="test" src="data:video/x-m4v;base64,{0}">'.format(video_encoded)
+HTML(data=video_tag)
+
 </pre>
 
 Equations:
