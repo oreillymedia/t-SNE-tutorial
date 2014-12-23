@@ -1,4 +1,4 @@
-# An illustrated introduction to t-SNE
+# An illustrated introduction to the t-SNE algorithm
 
 Some imports.
 
