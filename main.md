@@ -5,32 +5,36 @@ Some imports.
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
+# That's an impressive list of imports!
 import numpy as np
 from numpy import linalg
 from numpy.linalg import norm
-
 from scipy.spatial.distance import squareform, pdist
 
+# We import sklearn.
 import sklearn
 from sklearn.manifold import TSNE
 from sklearn.datasets import load_digits
 from sklearn.preprocessing import scale
+
+# We'll hack a bit with the t-SNE code in sklearn 0.15.2.
 from sklearn.metrics.pairwise import pairwise_distances
 from sklearn.manifold.t_sne import (_joint_probabilities,
                                     _kl_divergence)
 from sklearn.utils.extmath import _ravel
 
+# matplotlib for graphics
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 import matplotlib
 
+# We'll generate an animation with matplotlib and moviepy
 from moviepy.video.io.bindings import mplfig_to_npimage
 import moviepy.editor as mpy
 
+# Some matplotlib params.
 %matplotlib inline
-
 matplotlib.rcParams.update({'font.size': 22})
-MACHINE_EPSILON = np.finfo(np.double).eps
 </pre>
 
 Illustration on digit dataset.
@@ -41,13 +45,6 @@ Illustration on digit dataset.
 digits = load_digits()
 tsne = TSNE()
 digits_proj = tsne.fit_transform(digits.data)
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-n_samples = 1000
-n_dims = 3
 </pre>
 
 <pre data-code-language="python"
@@ -64,7 +61,7 @@ def scatter(x, colors):
 
     txts = []
     for i in range(10):
-        xtext, ytext = np.median(x[y == i, :], axis=0)
+        xtext, ytext = np.median(x[colors == i, :], axis=0)
         txt = ax.text(xtext, ytext, str(i), fontsize=24)
         txt.set_path_effects([
             PathEffects.Stroke(linewidth=5, foreground="w"),
@@ -77,14 +74,22 @@ def scatter(x, colors):
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-X = np.vstack([digits.data[digits.target==i] for i in range(10)])
-y = np.hstack([digits.target[digits.target==i] for i in range(10)])
+scatter(digits_proj, digits.target);
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-X = scale(X)
+X = np.vstack([digits.data[digits.target==i] 
+               for i in range(10)])
+y = np.hstack([digits.target[digits.target==i] 
+               for i in range(10)])
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+#X = scale(X)
 </pre>
 
 <pre data-code-language="python"
@@ -211,16 +216,39 @@ animation = mpy.VideoClip(make_frame_mpl,
 animation.write_gif("anim.gif", fps=20)
 </pre>
 
-<!--<img src="anim.gif" />-->
+<img src="anim.gif" />
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-n = 1. / (pdist(X_iter[..., 200], "sqeuclidean") + 1)
+n = 1. / (pdist(X_iter[..., -1], "sqeuclidean") + 1)
 Q = n / (2.0 * np.sum(n))
 Q = squareform(Q)
-plt.imshow(Q);
+
+f = plt.figure(figsize=(6, 6))
+ax = plt.subplot(aspect='equal')
+im = ax.imshow(Q)
+plt.axis('tight');
+plt.axis('off');
 </pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+def make_frame_mpl(t):
+    i = int(t*40)
+    n = 1. / (pdist(X_iter[..., i], "sqeuclidean") + 1)
+    Q = n / (2.0 * np.sum(n))
+    Q = squareform(Q)
+    im.set_data(Q)
+    return mplfig_to_npimage(f)
+
+animation = mpy.VideoClip(make_frame_mpl,
+                          duration=X_iter.shape[2]/40.)
+animation.write_gif("anim2.gif", fps=20)
+</pre>
+
+<img src="anim2.gif" />
 
 Equations:
 
