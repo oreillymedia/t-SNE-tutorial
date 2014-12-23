@@ -45,7 +45,7 @@ Some imports.
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-# That's an impressive list of imports!
+# That's an impressive list of imports.
 import numpy as np
 from numpy import linalg
 from numpy.linalg import norm
@@ -63,18 +63,20 @@ from sklearn.manifold.t_sne import (_joint_probabilities,
                                     _kl_divergence)
 from sklearn.utils.extmath import _ravel
 
-# matplotlib for graphics
+# matplotlib for graphics.
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 import matplotlib
+%matplotlib inline
 
-# We'll generate an animation with matplotlib and moviepy
+# We import seaborn for improve aesthetics.
+import seaborn as sns
+sns.set_style('darkgrid')
+sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 2.5})
+
+# We'll generate an animation with matplotlib and moviepy.
 from moviepy.video.io.bindings import mplfig_to_npimage
 import moviepy.editor as mpy
-
-# Some matplotlib params.
-%matplotlib inline
-matplotlib.rcParams.update({'font.size': 22})
 </pre>
 
 Illustration on digit dataset.
@@ -293,32 +295,36 @@ animation.write_gif("anim2.gif", fps=20)
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-def simpleaxis(ax):
-    ax.spines['top'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.set_yticks([]);
-    ax.get_xaxis().tick_bottom()
-    ax.set_xticks([0., .5, 1.]);
+npoints = 1000
+plt.figure(figsize=(15, 4))
+for i, D in enumerate((2, 5, 10)):
+    # Normally distributed points.
+    u = np.random.randn(npoints, D)
+    # Now on the sphere.
+    u /= norm(u, axis=1)[:, None]
+    # Uniform radius.
+    r = np.random.rand(npoints, 1)
+    # Uniformly within the ball.
+    points = u * r**(1./D)
+    # Plot.
+    ax = plt.subplot(1, 3, i+1)
+    ax.set_xlabel('Ball radius')
+    if i == 0:
+        ax.set_ylabel('Distance from origin')
+    ax.hist(norm(points, axis=1), 
+            bins=np.linspace(0., 1., 50))
+    ax.set_title('D=%d' % D, loc='left')
 </pre>
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-npoints = 1000
-plt.figure(figsize=(14, 3))
-for i, D in enumerate((2, 5, 10)):
-    u = np.random.randn(npoints, D)
-    u /= norm(u, axis=1)[:, None]
-    r = np.random.rand(npoints, 1)
-    points = u * r**(1./D)
-    ax = plt.subplot(1, 3, i+1)
-    ax.set_xlabel('Ball radius')
-    if i == 0:
-        ax.set_ylabel('Distance from\norigin')
-    simpleaxis(ax)
-    ax.hist(norm(points, axis=1), 
-            bins=np.linspace(0., 1., 50))
-    ax.set_title('D=%d' % D, loc='left')
+z = np.linspace(0., 5., 1000)
+gauss = np.exp(-z**2)
+cauchy = 1/(1+z**2)
+plt.plot(z, gauss, label='Gaussian distribution');
+plt.plot(z, cauchy, label='Cauchy distribution');
+plt.legend();
 </pre>
 
 Equations:
