@@ -18,73 +18,15 @@ TODO
 (detail the dataset, nsamples, ndimensions)
 (final output of tSNE)
 
-
-## Mathematical framework
-
-Let's explain how the algorithm works. First, a few definitions.
-
-A **data point** is a point <span class="math-tex" data-type="tex">\\(x_i\\)</span> in the original **data space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^D\\)</span>, where <span class="math-tex" data-type="tex">\\(D\\)</span> is the **dimensionality** of the data space. Every point is an image of a handwritten digit here. There are <span class="math-tex" data-type="tex">\\(N\\)</span> points.
-
-A **map point** is a point <span class="math-tex" data-type="tex">\\(y_i\\)</span> in the **map space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^2\\)</span>. This space will contain our final representation of the dataset. There is a _bijection_ between the data points and the map points: every map point represents one of the original images.
-
-How do we choose the positions of the map points? We want to conserve the structure of the data. More specifically, if two data points are close together, we want the two corresponding map points to be close too. Let's <span class="math-tex" data-type="tex">\\(\left| x_i - x_j \right|\\)</span> be the Euclidean distance between two data points, and <span class="math-tex" data-type="tex">\\(\left| y_i - y_j \right|\\)</span> the distance between the map points. We first define a conditional similarity between the two data points:
-
-<span class="math-tex" data-type="tex">\\(p_{j|i} = \frac{\exp\left(-\left| x_i - x_j\right|^2 \big/ 2\sigma_i^2\right)}{\displaystyle\sum_{k \neq i} \exp\left(-\left| x_i - x_k\right|^2 \big/ 2\sigma_i^2\right)}\\)</span>
-
-This measures how close $x_j$ is from $x_i$, considering a Gaussian distribution around $x_i$ with a given variance $\sigma_i^2$. This variance is different for every point; it is chosen such that points in dense areas are given a smaller variance than points in sparse areas.
-
-Now, we define the similarity as a symmetrized version of the conditional similarity:
-
-$$p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}$$
-
-We obtain a similarity matrix for our original dataset.
-
-TODO: SIMILARITY MATRIX
-
-Let's also define a similarity matrix for our map points.
-
-$$q_{ij} = \frac{f(\left| x_i - x_j\right|)}{\displaystyle\sum_{k \neq i} f(\left| x_i - x_k\right|)} \quad \textrm{with} \, f(z) = \frac{1}{1+z^2}.$$
-
-This is the same idea as for the data points, but with a different distribution (t-Student, or Cauchy distribution, instead of a Gaussian distribution). We'll elaborate on this choice later.
-
-Whereas the data similarity matrix $\big(p_{ij}\big)$ is fixed, the map similarity matrix $\big(q_{ij}\big)$ depends on the map points. What we want is for these two matrices to be as close as possible. This would mean that similar data points yield similar map points.
-
-## A physical analogy
-
-Let's assume that our map points are all connected with springs. The stiffness of a spring connecting points $i$ and $j$ depends on the mismatch between the similarity of the two data points and the similarity of the two map points, that is, $p_{ij} - q_{ij}$. Now, we let the system evolve according to the law of physics. If two map points are far apart while the data points are close, they are attracted together. If they are close while the data points are dissimilar, they are repelled.
-
-The final mapping is obtained when the equilibrium is reached.
-
-## Algorithm
-
-Remarkably, this analogy stems exactly from a natural mathematical algorithm. It corresponds to minimizing the Kullback-Leiber divergence between the two distributions $\big(p_{ij}\big)$ and $\big(q_{ij}\big)$:
-
-$$KL(P||Q) = \sum_{i, j} p_{ij} \, \log \frac{p_{ij}}{q_{ij}}.$$
-
-This measures the distance between our two similarity matrices.
-
-To minimize this score, we perform a gradient descent. The gradient can be computed analytically:
-
-$$\frac{\partial KL(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.$$
-
-This gradient expresses the sum of all spring forces applied to map point $i$.
-
-In the original paper, the authors detail a few tricks to improve the convergence of the gradient descent.
-
-TODO: animation
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+#TODO
+</pre>
 
 
 
-## The t-Student distribution
 
-Let's now explain the choice of the t-Student distribution for the map points, while a normal distribution is used for the data points. It is well known that the volume of the N-dimensional ball of radius $r$ scales as $r^N$. When reducing the dimensionality of a dataset,
-
-* there is a trick in the choice of the distribution. We have chosen a Gaussian distribution for the data points. Why not the same for map points? Answer = scaling of the n-dim ball volume. When reducing dimension, there is an inbalance in the distances between similar points and dissimilar points. There is too much attraction between the points (original SNE). The authors chose to compensate this inbalance by taking a non-Gaussian distribution with a much heavier tail. This allows dissimilar points to be much further away in the 2D space. (plot Gaussian vs Cauchy distrib)
-
-
-* animation
-
-Some imports.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -163,6 +105,33 @@ def scatter(x, colors):
 scatter(digits_proj, digits.target);
 </pre>
 
+
+
+
+## Mathematical framework
+
+Let's explain how the algorithm works. First, a few definitions.
+
+A **data point** is a point <span class="math-tex" data-type="tex">\\(x_i\\)</span> in the original **data space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^D\\)</span>, where <span class="math-tex" data-type="tex">\\(D\\)</span> is the **dimensionality** of the data space. Every point is an image of a handwritten digit here. There are <span class="math-tex" data-type="tex">\\(N\\)</span> points.
+
+A **map point** is a point <span class="math-tex" data-type="tex">\\(y_i\\)</span> in the **map space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^2\\)</span>. This space will contain our final representation of the dataset. There is a _bijection_ between the data points and the map points: every map point represents one of the original images.
+
+How do we choose the positions of the map points? We want to conserve the structure of the data. More specifically, if two data points are close together, we want the two corresponding map points to be close too. Let's <span class="math-tex" data-type="tex">\\(\left| x_i - x_j \right|\\)</span> be the Euclidean distance between two data points, and <span class="math-tex" data-type="tex">\\(\left| y_i - y_j \right|\\)</span> the distance between the map points. We first define a conditional similarity between the two data points:
+
+<span class="math-tex" data-type="tex">\\(p_{j|i} = \frac{\exp\left(-\left| x_i - x_j\right|^2 \big/ 2\sigma_i^2\right)}{\displaystyle\sum_{k \neq i} \exp\left(-\left| x_i - x_k\right|^2 \big/ 2\sigma_i^2\right)}\\)</span>
+
+This measures how close $x_j$ is from $x_i$, considering a Gaussian distribution around $x_i$ with a given variance $\sigma_i^2$. This variance is different for every point; it is chosen such that points in dense areas are given a smaller variance than points in sparse areas.
+
+Now, we define the similarity as a symmetrized version of the conditional similarity:
+
+$$p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}$$
+
+We obtain a similarity matrix for our original dataset.
+
+
+
+
+
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
@@ -222,6 +191,47 @@ plt.imshow(P_binary_s, interpolation='none')
 plt.axis('off')
 plt.title("$p_{j|i}$ (binary search sigma)", fontdict={'fontsize': 16});
 </pre>
+
+
+
+
+
+
+
+Let's also define a similarity matrix for our map points.
+
+$$q_{ij} = \frac{f(\left| x_i - x_j\right|)}{\displaystyle\sum_{k \neq i} f(\left| x_i - x_k\right|)} \quad \textrm{with} \, f(z) = \frac{1}{1+z^2}.$$
+
+This is the same idea as for the data points, but with a different distribution (t-Student, or Cauchy distribution, instead of a Gaussian distribution). We'll elaborate on this choice later.
+
+Whereas the data similarity matrix $\big(p_{ij}\big)$ is fixed, the map similarity matrix $\big(q_{ij}\big)$ depends on the map points. What we want is for these two matrices to be as close as possible. This would mean that similar data points yield similar map points.
+
+## A physical analogy
+
+Let's assume that our map points are all connected with springs. The stiffness of a spring connecting points $i$ and $j$ depends on the mismatch between the similarity of the two data points and the similarity of the two map points, that is, $p_{ij} - q_{ij}$. Now, we let the system evolve according to the law of physics. If two map points are far apart while the data points are close, they are attracted together. If they are close while the data points are dissimilar, they are repelled.
+
+The final mapping is obtained when the equilibrium is reached.
+
+## Algorithm
+
+Remarkably, this analogy stems exactly from a natural mathematical algorithm. It corresponds to minimizing the Kullback-Leiber divergence between the two distributions $\big(p_{ij}\big)$ and $\big(q_{ij}\big)$:
+
+$$KL(P||Q) = \sum_{i, j} p_{ij} \, \log \frac{p_{ij}}{q_{ij}}.$$
+
+This measures the distance between our two similarity matrices.
+
+To minimize this score, we perform a gradient descent. The gradient can be computed analytically:
+
+$$\frac{\partial KL(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.$$
+
+This gradient expresses the sum of all spring forces applied to map point $i$.
+
+Now, let's illustrate this process by creating an animation of the convergence.
+
+
+
+
+
 
 <pre data-code-language="python"
      data-executable="true"
@@ -336,6 +346,18 @@ animation.write_gif("anim2.gif", fps=20)
 
 <img src="anim2.gif" />
 
+
+
+
+
+
+
+
+## The t-Student distribution
+
+Let's now explain the choice of the t-Student distribution for the map points, while a normal distribution is used for the data points. It is well known that the volume of the $N$-dimensional ball of radius $r$ scales as $r^N$. When $N$ is large, if we pick random points uniformly in the ball, most points will be close to the surface, and very few will be near the center.
+
+
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
@@ -360,6 +382,14 @@ for i, D in enumerate((2, 5, 10)):
     ax.set_title('D=%d' % D, loc='left')
 </pre>
 
+
+When reducing the dimensionality of a dataset, if we used the same Gaussian distribution for the data points and the map points, this mathematical fact would result in an *imbalance* among the neighbors of a given point. This imbalance would lead to an excess of attraction forces and a sometimes unappealing mapping. This is actually what happens in the original SNE algorithm, by Hinton and Roweis (2002).
+
+The t-SNE algorithm works around this problem by using a t-Student with one degree of freedom (or Cauchy) distribution for the map points. This distribution has a much heavier tail than the Gaussian distribution, which *compensates* the original imbalance. For a given data similarity between two data points, the two corresponding map points will need to be much further apart in order for their similarity to match the data similarity.
+
+
+
+
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
@@ -371,7 +401,16 @@ plt.plot(z, cauchy, label='Cauchy distribution');
 plt.legend();
 </pre>
 
-Links:
+
+
+
+## Conclusion
+
+The t-SNE algorithm provides an effective method to visualize a complex dataset. It successfully uncovers hidden structures in the data, exposing natural clusters or smooth nonlinear variations along the dimensions. It has been implemented in many languages, including Python, and it can be easily used thanks to the scikit-learn library.
+
+The references below link to some optimizations and improvements that can be made to the algorithm and implementations. In particular, the algorithm described here is quadratic in the number of samples, which makes it unscalable to large datasets. One could for example obtain an $O(N \log N)$ complexity by using the Barnes-Hut algorithm to accelerate the N-body simulation via a quadtree or an octree.
+
+## References
 
 * [Original paper](http://jmlr.csail.mit.edu/papers/volume9/vandermaaten08a/vandermaaten08a.pdf)
 * [Optimized t-SNE paper](http://lvdmaaten.github.io/publications/papers/JMLR_2014.pdf)
