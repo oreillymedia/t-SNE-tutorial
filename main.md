@@ -10,11 +10,11 @@ The answer lies in the observation that many real-world datasets have a low intr
 
 This is the topic of [**manifold learning**](http://en.wikipedia.org/wiki/Nonlinear_dimensionality_reduction), also called **nonlinear dimensionality reduction**, a branch of machine learning (more specifically, _unsupervised learning_). It is still an active area of research today to develop algorithms that can automatically recover a hidden structure in a high-dimensional dataset.
 
-This post is an introduction to a popular dimensonality reduction algorithm: [**t-distributed stochastic neighbor embedding (t-SNE)**](http://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding). Developed by [Laurens van der Maaten](http://lvdmaaten.github.io/) and [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/), this algorithm has been successfully applied to many real-world datasets. Here, we'll see the key concepts of the method, when applied to a toy dataset (handwritten digits). We'll use Python and the [scikit-learn](http://scikit-learn.org/stable/index.html) library.
+This post is an introduction to a popular dimensonality reduction algorithm: [**t-distributed stochastic neighbor embedding (t-SNE)**](http://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding). Developed by [Laurens van der Maaten](http://lvdmaaten.github.io/) and [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/), this algorithm has been successfully applied to many real-world datasets. Here, we'll follow the original paper and describe the key mathematical concepts of the method, when applied to a toy dataset (handwritten digits). We'll use Python and the [scikit-learn](http://scikit-learn.org/stable/index.html) library.
 
 ## Visualizing handwritten digits.
 
-Let's first import a handful of libraries.
+Let's first import a few libraries.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -55,24 +55,45 @@ from moviepy.video.io.bindings import mplfig_to_npimage
 import moviepy.editor as mpy
 </pre>
 
-
+Now we load the classic *handwritten digits* datasets. It contains 1797 images with <span class="math-tex" data-type="tex">\\(8*8=64\\)</span> pixels each.
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
 digits = load_digits()
+digits.data.shape
 </pre>
-
-TODO
-(detail the dataset, nsamples, ndimensions)
-(final output of tSNE)
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-tsne = TSNE()
-digits_proj = tsne.fit_transform(digits.data)
+print(digits['DESCR'])
 </pre>
+
+Here are the images:
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+nrows, ncols = 2, 5
+plt.figure(figsize=(6,3))
+plt.gray()
+for i in range(ncols * nrows):
+    ax = plt.subplot(nrows, ncols, i + 1)
+    ax.matshow(digits.images[i,...])
+    plt.xticks([]); plt.yticks([])
+    plt.title(digits.target[i])
+</pre>
+
+Now let's run the t-SNE algorithm on the dataset. It just take one line with scikit-learn.
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+digits_proj = TSNE().fit_transform(digits.data)
+</pre>
+
+Here is a utility function used to display the transformed dataset.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -83,10 +104,10 @@ def scatter(x, colors):
     f = plt.figure(figsize=(8, 8))
     ax = plt.subplot(aspect='equal')
     sc = ax.scatter(x[:,0], x[:,1], lw=0, s=40,
-                    c=palette[colors.astype(np.int)]);
-    plt.xlim(-25, 25);
-    plt.ylim(-25, 25);
-    ax.axis('off');
+                    c=palette[colors.astype(np.int)])
+    plt.xlim(-25, 25)
+    plt.ylim(-25, 25)
+    ax.axis('off')
 
     txts = []
     for i in range(10):
@@ -108,9 +129,9 @@ scatter(digits_proj, digits.target);
 
 ## Mathematical framework
 
-Let's explain how the algorithm works. First, a few definitions.
+Now, let's explain how the algorithm works. First, a few definitions.
 
-A **data point** is a point <span class="math-tex" data-type="tex">\\(x_i\\)</span> in the original **data space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^D\\)</span>, where <span class="math-tex" data-type="tex">\\(D\\)</span> is the **dimensionality** of the data space. Every point is an image of a handwritten digit here. There are <span class="math-tex" data-type="tex">\\(N\\)</span> points.
+A **data point** is a point <span class="math-tex" data-type="tex">\\(x_i\\)</span> in the original **data space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^D\\)</span>, where <span class="math-tex" data-type="tex">\\(D=64\\)</span> is the **dimensionality** of the data space. Every point is an image of a handwritten digit here. There are <span class="math-tex" data-type="tex">\\(N=1797\\)</span> points.
 
 A **map point** is a point <span class="math-tex" data-type="tex">\\(y_i\\)</span> in the **map space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^2\\)</span>. This space will contain our final representation of the dataset. There is a _bijection_ between the data points and the map points: every map point represents one of the original images.
 
@@ -124,7 +145,9 @@ Now, we define the similarity as a symmetrized version of the conditional simila
 
 <span class="math-tex" data-type="tex">\\(p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}\\)</span>
 
-We obtain a similarity matrix for our original dataset.
+We obtain a similarity matrix for our original dataset. What does this matrix look like?
+
+We first reorder the data points according to the handwritten number.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -135,11 +158,7 @@ y = np.hstack([digits.target[digits.target==i]
                for i in range(10)])
 </pre>
 
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-distances = pairwise_distances(X, squared=True)
-</pre>
+The following function computes the similarity with a constant sigma.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -150,14 +169,20 @@ def _joint_probabilities_constant_sigma(D, sigma):
     return P
 </pre>
 
+We now compute the similarity with a sigma depending on the data point (found via a binary search). This algorith is implemented in scikit-learn's `_joint_probabilities` function.
+
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
+# Pairwise distances between all data points.
 D = pairwise_distances(X, squared=True)
 P_constant = _joint_probabilities_constant_sigma(D, .002)
 P_binary = _joint_probabilities(D, 30., False)
+# The output of this function needs to be reshaped to a square matrix.
 P_binary_s = squareform(P_binary)
 </pre>
+
+Let's display the distance matrix of the data points, and the similarity matrix with both a constant and variable sigma.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -181,23 +206,25 @@ plt.axis('off')
 plt.title("$p_{j|i}$ (binary search sigma)", fontdict={'fontsize': 16});
 </pre>
 
+We already observe the 10 groups in the data, corresponding to the 10 numbers.
+
 Let's also define a similarity matrix for our map points.
 
-<span class="math-tex" data-type="tex">\\(q_{ij} = \frac{f(\left| x_i - x_j\right|)}{\displaystyle\sum_{k \neq i} f(\left| x_i - x_k\right|)} \quad \textrm{with} \, f(z) = \frac{1}{1+z^2}.\\)</span>
+<span class="math-tex" data-type="tex">\\(q_{ij} = \frac{f(\left| x_i - x_j\right|)}{\displaystyle\sum_{k \neq i} f(\left| x_i - x_k\right|)} \quad \textrm{with} \quad f(z) = \frac{1}{1+z^2}.\\)</span>
 
-This is the same idea as for the data points, but with a different distribution (t-Student, or Cauchy distribution, instead of a Gaussian distribution). We'll elaborate on this choice later.
+This is the same idea as for the data points, but with a different distribution ([**t-Student with one degree of freedom**](http://en.wikipedia.org/wiki/Student%27s_t-distribution), or [**Cauchy distribution**](http://en.wikipedia.org/wiki/Cauchy_distribution), instead of a Gaussian distribution). We'll elaborate on this choice later.
 
 Whereas the data similarity matrix <span class="math-tex" data-type="tex">\\(\big(p_{ij}\big)\\)</span> is fixed, the map similarity matrix <span class="math-tex" data-type="tex">\\(\big(q_{ij}\big)\\)</span> depends on the map points. What we want is for these two matrices to be as close as possible. This would mean that similar data points yield similar map points.
 
 ## A physical analogy
 
-Let's assume that our map points are all connected with springs. The stiffness of a spring connecting points <span class="math-tex" data-type="tex">\\(i\\)</span> and <span class="math-tex" data-type="tex">\\(j\\)</span> depends on the mismatch between the similarity of the two data points and the similarity of the two map points, that is, <span class="math-tex" data-type="tex">\\(p_{ij} - q_{ij}\\)</span>. Now, we let the system evolve according to the law of physics. If two map points are far apart while the data points are close, they are attracted together. If they are close while the data points are dissimilar, they are repelled.
+Let's assume that our map points are all connected with springs. The stiffness of a spring connecting points <span class="math-tex" data-type="tex">\\(i\\)</span> and <span class="math-tex" data-type="tex">\\(j\\)</span> depends on the mismatch between the similarity of the two data points and the similarity of the two map points, that is, <span class="math-tex" data-type="tex">\\(p_{ij} - q_{ij}\\)</span>. Now, we let the system evolve according to the laws of physics. If two map points are far apart while the data points are close, they are attracted together. If they are nearby while the data points are dissimilar, they are repelled.
 
 The final mapping is obtained when the equilibrium is reached.
 
 ## Algorithm
 
-Remarkably, this analogy stems exactly from a natural mathematical algorithm. It corresponds to minimizing the Kullback-Leiber divergence between the two distributions <span class="math-tex" data-type="tex">\\(\big(p_{ij}\big)\\)</span> and <span class="math-tex" data-type="tex">\\(\big(q_{ij}\big)\\)</span>:
+Remarkably, this analogy stems exactly from a natural mathematical algorithm. It corresponds to minimizing the [Kullback-Leiber](http://en.wikipedia.org/wiki/Kullback%E2%80%93Leibler_divergence) divergence between the two distributions <span class="math-tex" data-type="tex">\\(\big(p_{ij}\big)\\)</span> and <span class="math-tex" data-type="tex">\\(\big(q_{ij}\big)\\)</span>:
 
 <span class="math-tex" data-type="tex">\\(KL(P||Q) = \sum_{i, j} p_{ij} \, \log \frac{p_{ij}}{q_{ij}}.\\)</span>
 
@@ -205,20 +232,22 @@ This measures the distance between our two similarity matrices.
 
 To minimize this score, we perform a gradient descent. The gradient can be computed analytically:
 
-<span class="math-tex" data-type="tex">\\(\frac{\partial \, K\!L(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.\\)</span>
+<span class="math-tex" data-type="tex">\\(\frac{\partial \, K\!L(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) u_{ij} \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.\\)</span>
 
-This gradient expresses the sum of all spring forces applied to map point <span class="math-tex" data-type="tex">\\(i\\)</span>.
+Here, <span class="math-tex" data-type="tex">\\(u_{ij}\\)</span> is a unit vector going from <span class="math-tex" data-type="tex">\\(y_j\\)</span> to <span class="math-tex" data-type="tex">\\(y_i\\)</span>. This gradient expresses the sum of all spring forces applied to map point <span class="math-tex" data-type="tex">\\(i\\)</span>.
 
-Now, let's illustrate this process by creating an animation of the convergence.
+Let's illustrate this process by creating an animation of the convergence. We'll have to [monkey-patch](http://en.wikipedia.org/wiki/Monkey_patch) the internal `_gradient_descent()` function from scikit-learn's t-SNE implementation in order to register the position of the map points at every iteration.
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
+# This list will contain the positions of the map points at every iteration.
 positions = []
 def _gradient_descent(objective, p0, it, n_iter, n_iter_without_progress=30,
                       momentum=0.5, learning_rate=1000.0, min_gain=0.01,
                       min_grad_norm=1e-7, min_error_diff=1e-7, verbose=0,
                       args=[]):
+    # The documentation of this function can be found in scikit-learn's code.
     p = p0.copy().ravel()
     update = np.zeros_like(p)
     gains = np.ones_like(p)
@@ -227,7 +256,9 @@ def _gradient_descent(objective, p0, it, n_iter, n_iter_without_progress=30,
     best_iter = 0
 
     for i in range(it, n_iter):
+        # We append the current position.
         positions.append(p.copy())
+        
         new_error, grad = objective(p, *args)
         error_diff = np.abs(new_error - error)
         error = new_error
@@ -256,11 +287,12 @@ def _gradient_descent(objective, p0, it, n_iter, n_iter_without_progress=30,
 sklearn.manifold.t_sne._gradient_descent = _gradient_descent
 </pre>
 
+Let's run the algorithm again, but this time saving all intermediate positions.
+
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-tsne = TSNE()
-X_proj = tsne.fit_transform(X)
+X_proj = TSNE().fit_transform(X)
 </pre>
 
 <pre data-code-language="python"
@@ -270,10 +302,12 @@ X_iter = np.dstack(position.reshape(-1, 2)
                    for position in positions)
 </pre>
 
+We create an animation using [MoviePy](http://zulko.github.io/moviepy/).
+
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-f, ax, sc, txts = scatter(X_iter[..., -1], y);
+f, ax, sc, txts = scatter(X_iter[..., -1], y)
 
 def make_frame_mpl(t):
     i = int(t*40)
@@ -287,10 +321,14 @@ def make_frame_mpl(t):
 
 animation = mpy.VideoClip(make_frame_mpl,
                           duration=X_iter.shape[2]/40.)
-animation.write_gif("anim.gif", fps=20)
+animation.write_gif("tsne.gif", fps=20)
 </pre>
 
-<img src="anim.gif" />
+<img src="tsne.gif" />
+
+We can observe the different phases of the optimization. The details of the algorithm can be found in the original paper.
+
+Let's also create an animation of the similarity matrix of the map points. We'll observe that it's getting closer and closer to the similarity matrix of the data points.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -302,13 +340,9 @@ Q = squareform(Q)
 f = plt.figure(figsize=(6, 6))
 ax = plt.subplot(aspect='equal')
 im = ax.imshow(Q, interpolation='none', cmap=pal)
-plt.axis('tight');
-plt.axis('off');
-</pre>
+plt.axis('tight')
+plt.axis('off')
 
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
 def make_frame_mpl(t):
     i = int(t*40)
     n = 1. / (pdist(X_iter[..., i], "sqeuclidean") + 1)
@@ -319,14 +353,16 @@ def make_frame_mpl(t):
 
 animation = mpy.VideoClip(make_frame_mpl,
                           duration=X_iter.shape[2]/40.)
-animation.write_gif("anim2.gif", fps=20)
+animation.write_gif("tsne_matrix.gif", fps=20)
 </pre>
 
-<img src="anim2.gif" />
+<img src="tsne_matrix.gif" />
 
 ## The t-Student distribution
 
 Let's now explain the choice of the t-Student distribution for the map points, while a normal distribution is used for the data points. It is well known that the volume of the <span class="math-tex" data-type="tex">\\(N\\)</span>-dimensional ball of radius <span class="math-tex" data-type="tex">\\(r\\)</span> scales as <span class="math-tex" data-type="tex">\\(r^N\\)</span>. When <span class="math-tex" data-type="tex">\\(N\\)</span> is large, if we pick random points uniformly in the ball, most points will be close to the surface, and very few will be near the center.
+
+This is illustrated by the following simulation, showing the distribution of the distances of these points, for different dimensions.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -352,9 +388,9 @@ for i, D in enumerate((2, 5, 10)):
     ax.set_title('D=%d' % D, loc='left')
 </pre>
 
-When reducing the dimensionality of a dataset, if we used the same Gaussian distribution for the data points and the map points, this mathematical fact would result in an _imbalance_ among the neighbors of a given point. This imbalance would lead to an excess of attraction forces and a sometimes unappealing mapping. This is actually what happens in the original SNE algorithm, by Hinton and Roweis (2002).
+When reducing the dimensionality of a dataset, if we used the same Gaussian distribution for the data points and the map points, we could get an _imbalance_ among the neighbors of a given point. This imbalance would lead to an excess of attraction forces and a sometimes unappealing mapping. This is actually what happens in the original SNE algorithm, by Hinton and Roweis (2002).
 
-The t-SNE algorithm works around this problem by using a t-Student with one degree of freedom (or Cauchy) distribution for the map points. This distribution has a much heavier tail than the Gaussian distribution, which _compensates_ the original imbalance. For a given data similarity between two data points, the two corresponding map points will need to be much further apart in order for their similarity to match the data similarity.
+The t-SNE algorithm works around this problem by using a t-Student with one degree of freedom (or Cauchy) distribution for the map points. This distribution has a much heavier tail than the Gaussian distribution, which _compensates_ the original imbalance. For a given data similarity between two data points, the two corresponding map points will need to be much further apart in order for their similarity to match the data similarity. This is can be seen in the following plot.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -362,14 +398,14 @@ The t-SNE algorithm works around this problem by using a t-Student with one degr
 z = np.linspace(0., 5., 1000)
 gauss = np.exp(-z**2)
 cauchy = 1/(1+z**2)
-plt.plot(z, gauss, label='Gaussian distribution');
-plt.plot(z, cauchy, label='Cauchy distribution');
+plt.plot(z, gauss, label='Gaussian distribution')
+plt.plot(z, cauchy, label='Cauchy distribution')
 plt.legend();
 </pre>
 
 ## Conclusion
 
-The t-SNE algorithm provides an effective method to visualize a complex dataset. It successfully uncovers hidden structures in the data, exposing natural clusters or smooth nonlinear variations along the dimensions. It has been implemented in many languages, including Python, and it can be easily used thanks to the scikit-learn library.
+The t-SNE algorithm provides an effective method to visualize a complex dataset. It successfully uncovers hidden structures in the data, exposing natural clusters and smooth nonlinear variations along the dimensions. It has been implemented in many languages, including Python, and it can be easily used thanks to the scikit-learn library.
 
 The references below link to some optimizations and improvements that can be made to the algorithm and implementations. In particular, the algorithm described here is quadratic in the number of samples, which makes it unscalable to large datasets. One could for example obtain an <span class="math-tex" data-type="tex">\\(O(N \log N)\\)</span> complexity by using the Barnes-Hut algorithm to accelerate the N-body simulation via a quadtree or an octree.
 
