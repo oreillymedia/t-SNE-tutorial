@@ -8,38 +8,81 @@ How can we possibly reduce the dimensionality of a dataset from an arbitrary num
 
 The answer lies in the observation that many real-world datasets have a low intrinsic dimensionality, even though they're embedded in a high-dimensional space. Imagine that you're shooting a panoramic landscape with your camera, while rotating around yourself. We can consider every picture as a point in a 16,000,000-dimensional space (assuming a 16 megapixels camera). Yet, the set of pictures approximately lie on a three-dimensional space (yaw, pitch, roll). This low-dimensional space is embedded in the high-dimensional space in a complex, nonlinear way. Hidden in the data, this structure can only be recovered with specific mathematical methods.
 
-This is the topic of manifold learning, also called nonlinear dimensionality reduction, a branch of machine learning (more specifically, *unsupervised learning*). It is still an active area of research today to develop algorithms that can automatically recover a hidden structure in a high-dimensional dataset.
+This is the topic of manifold learning, also called nonlinear dimensionality reduction, a branch of machine learning (more specifically, _unsupervised learning_). It is still an active area of research today to develop algorithms that can automatically recover a hidden structure in a high-dimensional dataset.
 
 This post is an introduction to a popular dimensonality reduction algorithm: **t-distributed stochastic neighbor embedding (t-SNE)**. Developed by Laurens van der Maaten and Geoffrey Hinton (now working at Google), this algorithm has been successfully applied to many real-world datasets. Here, we'll see the key concepts of the method, when applied to a toy dataset (handwritten digits). We'll use Python and the scikit-learn library.
 
-
 ## Visualizing handwritten digits.
 
+TODO
 (detail the dataset, nsamples, ndimensions)
 (final output of tSNE)
 
 
 ## Mathematical framework
 
-Let's explain how the algorithm works. First, a few definitions. A **data point** is a point in the original space $\mathbb{R}^D$.
+Let's explain how the algorithm works. First, a few definitions.
 
-* data points = original points in R^D
-* map points = target points in R^2
-* every data point has a corresponding map point, and conversely (bijection)
-* we want the map points to reflect the structure of the data points
-* how to do this? we want the distance to be kept
-* here is how we express this idea
-* we start from the distance matrix
-* now, we consider a Gaussian distribution centered on each data point, with a given variance
-* idem for the map points, but with a t-Student distribution instead (more on that later)
-* we define a similarity matrix for the data points and the map points: sim(i,j) is roughly speaking the proba that j belongs to distrib i. close = high, far = low
-* screenshot of the sim matrix
-* idem for the map points: we want the two sim matrices to be close
-* physical analogy: n-body problem with springs and strength (stifness?) depending on the mismatch. if sim(i,j) the same for data points and map points, force=0. if i and j are too far apart while they have similar sim, they are attracted. if they are too close while they have different sim, they are repelled
+A **data point** is a point <span class="math-tex" data-type="tex">\\(x_i\\)</span> in the original **data space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^D\\)</span>, where <span class="math-tex" data-type="tex">\\(D\\)</span> is the **dimensionality** of the data space. Every point is an image of a handwritten digit here. There are <span class="math-tex" data-type="tex">\\(N\\)</span> points.
+
+A **map point** is a point <span class="math-tex" data-type="tex">\\(y_i\\)</span> in the **map space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^2\\)</span>. This space will contain our final representation of the dataset. There is a _bijection_ between the data points and the map points: every map point represents one of the original images.
+
+How do we choose the positions of the map points? We want to conserve the structure of the data. More specifically, if two data points are close together, we want the two corresponding map points to be close too. Let's <span class="math-tex" data-type="tex">\\(\left| x_i - x_j \right|\\)</span> be the Euclidean distance between two data points, and <span class="math-tex" data-type="tex">\\(\left| y_i - y_j \right|\\)</span> the distance between the map points. We first define a conditional similarity between the two data points:
+
+<span class="math-tex" data-type="tex">\\(p_{j|i} = \frac{\exp\left(-\left| x_i - x_j\right|^2 \big/ 2\sigma_i^2\right)}{\displaystyle\sum_{k \neq i} \exp\left(-\left| x_i - x_k\right|^2 \big/ 2\sigma_i^2\right)}\\)</span>
+
+This measures how close $x_j$ is from $x_i$, considering a Gaussian distribution around $x_i$ with a given variance $\sigma_i^2$. This variance is different for every point; it is chosen such that points in dense areas are given a smaller variance than points in sparse areas.
+
+Now, we define the similarity as a symmetrized version of the conditional similarity:
+
+$$p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}$$
+
+We obtain a similarity matrix for our original dataset.
+
+TODO: SIMILARITY MATRIX
+
+Let's also define a similarity matrix for our map points.
+
+$$q_{ij} = \frac{f(\left| x_i - x_j\right|)}{\displaystyle\sum_{k \neq i} f(\left| x_i - x_k\right|)} \quad \textrm{with} \, f(z) = \frac{1}{1+z^2}.$$
+
+This is the same idea as for the data points, but with a different distribution (t-Student, or Cauchy distribution, instead of a Gaussian distribution). We'll elaborate on this choice later.
+
+Whereas the data similarity matrix $\big(p_{ij}\big)$ is fixed, the map similarity matrix $\big(q_{ij}\big)$ depends on the map points. What we want is for these two matrices to be as close as possible. This would mean that similar data points yield similar map points.
+
+## A physical analogy
+
+Let's assume that our map points are all connected with springs. The stiffness of a spring connecting points $i$ and $j$ depends on the mismatch between the similarity of the two data points and the similarity of the two map points, that is, $p_{ij} - q_{ij}$. Now, we let the system evolve according to the law of physics. If two map points are far apart while the data points are close, they are attracted together. If they are close while the data points are dissimilar, they are repelled.
+
+The final mapping is obtained when the equilibrium is reached.
+
+## Algorithm
+
+Remarkably, this analogy stems exactly from a natural mathematical algorithm. It corresponds to minimizing the Kullback-Leiber divergence between the two distributions $\big(p_{ij}\big)$ and $\big(q_{ij}\big)$:
+
+$$KL(P||Q) = \sum_{i, j} p_{ij} \, \log \frac{p_{ij}}{q_{ij}}.$$
+
+This measures the distance between our two similarity matrices.
+
+To minimize this score, we perform a gradient descent. The gradient can be computed analytically:
+
+$$\frac{\partial KL(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.$$
+
+This gradient expresses the sum of all spring forces applied to map point $i$.
+
+In the original paper, the authors detail a few tricks to improve the convergence of the gradient descent.
+
+TODO: animation
+
+
+
+## The t-Student distribution
+
+Let's now explain the choice of the t-Student distribution for the map points, while a normal distribution is used for the data points. It is well known that the volume of the N-dimensional ball of radius $r$ scales as $r^N$. When reducing the dimensionality of a dataset,
+
 * there is a trick in the choice of the distribution. We have chosen a Gaussian distribution for the data points. Why not the same for map points? Answer = scaling of the n-dim ball volume. When reducing dimension, there is an inbalance in the distances between similar points and dissimilar points. There is too much attraction between the points (original SNE). The authors chose to compensate this inbalance by taking a non-Gaussian distribution with a much heavier tail. This allows dissimilar points to be much further away in the 2D space. (plot Gaussian vs Cauchy distrib)
-* we let the system evolve according to law of physics
-* mathematically, what we're doing is that we minimize the KL divergence between the sim matrices. (formula of KL and its gradient) gradient descent. it is remarkable that this sound mathematical model corresponds to this intuitive physical formulation. (formula of SNE KL as well)
-animation
+
+
+* animation
 
 Some imports.
 
@@ -327,16 +370,6 @@ plt.plot(z, gauss, label='Gaussian distribution');
 plt.plot(z, cauchy, label='Cauchy distribution');
 plt.legend();
 </pre>
-
-Equations:
-
-<span class="math-tex" data-type="tex">\\(p_{j|i} = \frac{\exp(-\lVert\mathbf{x}_i - \mathbf{x}_j\rVert^2 / 2\sigma_i^2)}{\sum_{k \neq i} \exp(-\lVert\mathbf{x}_i - \mathbf{x}_k\rVert^2 / 2\sigma_i^2)}\\)</span>
-
-<span class="math-tex" data-type="tex">\\(p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}\\)</span>
-
-<span class="math-tex" data-type="tex">\\(q_{ij} = \frac{(1 + \lVert \mathbf{y}_i - \mathbf{y}_j\rVert^2)^{-1}}{\sum_{k \neq l} (1 + \lVert \mathbf{y}_k - \mathbf{y}_l\rVert^2)^{-1}}\\)</span>
-
-<span class="math-tex" data-type="tex">\\(KL(P||Q) = \sum_{i \neq j} p_{ij} \, \log \frac{p_{ij}}{q_{ij}}\\)</span>
 
 Links:
 
