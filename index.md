@@ -57,7 +57,7 @@ animation.write_videofile("sinc_mpl.mp4", fps=20)
 
 video = open("/home/pyxie/sinc_mpl.mp4", "rb").read()
 video_encoded = b64encode(video)
-video_tag = '<video controls alt="test" src="data:video/x-m4v;base64,{0}">'.format(video_encoded)
+video_tag = '<video controls alt="test" src="data:video/x-m4v;base64,{0}"></video>'.format(video_encoded)
 HTML(data=video_tag)
 
 </pre>
