@@ -18,9 +18,7 @@ Let's test an inline equation: <span class="math-tex" data-type="tex">\\(\pi=3.1
 
 Moviepy is generating an image, but IPython Notebook can't seem to open the GIF:
 
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
+<pre data-code-language="python"  data-executable="true" data-type="programlisting">
 
 import matplotlib
 matplotlib.use('Agg')
@@ -33,6 +31,16 @@ import moviepy.editor as mpy
 from IPython.display import Image
 from IPython.display import HTML
 from base64 import b64encode
+from IPython.display import FileLink, FileLinks
+
+def video(fname, mimetype):
+    """Load the video in the file `fname`, with given mimetype, and display as HTML5 video.
+    """
+    from IPython.display import HTML
+    video_encoded = open(fname, "rb").read().encode("base64")
+    video_tag = '<video controls alt="test" src="data:video/{0};base64,{1}">'.format(mimetype, video_encoded)
+    return HTML(data=video_tag)
+
 
 # DRAW A FIGURE WITH MATPLOTLIB
 
@@ -55,10 +63,8 @@ animation =mpy.VideoClip(make_frame_mpl, duration=duration)
 animation.write_videofile("sinc_mpl.mp4", fps=20)
 
 
-video = open("/home/pyxie/sinc_mpl.mp4", "rb").read()
-video_encoded = b64encode(video)
-video_tag = '<video controls alt="test" src="data:video/x-m4v;base64,{0}"></video>'.format(video_encoded)
-HTML(data=video_tag)
+video('sinc_mpl.mp4', 'mp4')
+
 
 </pre>
 
