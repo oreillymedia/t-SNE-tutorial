@@ -1,5 +1,49 @@
 # An illustrated introduction to the t-SNE algorithm
 
+INTRO
+
+* complex, high-dimensional data
+* need to visualize
+* hard to visualize more than 3 dimensions
+* sometimes, high-dimensional data only contains a few relevant dimensions
+* automatically discovering this structure = manifold learning
+* many algorithms exist
+* one of the state-of-the-art algo is t-SNE, invented in 2008 by ** and Hinton
+* it has been used in ** and **
+* it is implemented in scikit-learn, the leading machine learning platforms in python
+* in this post, we'll introduce and illustrate the main mathematical ideas underlying the algorithm
+* we'll be using a famous data example throughout this post: the handwritten digits dataset (put screenshot). number of features? number of samples?
+* demo: otuput of t-SNE on the dataset
+
+The ancestor: SNE
+
+* data points = original points in R^D
+* map points = target points in R^2
+* every data point has a corresponding map point, and conversely (bijection)
+* we want the map points to reflect the structure of the data points
+* how to do this? we want the distance to be kept
+* here is how we express this idea
+* we start from the distance matrix
+* now, we consider a Gaussian distribution centered on each data point, with a given variance
+* idem for the map points, but with a fixed variance
+* we define a similarity matrix for the data points and the map points: sim(i,j) is roughly speaking the proba that j belongs to distrib i. close = high, far = low
+* screenshot of the sim matrix
+* idem for the map points: we want the two sim matrices to be close
+* physical analogy: n-body problem with springs and strength (stifness?) depending on the mismatch. if sim(i,j) the same for data points and map points, force=0. if i and j are too far apart while they have similar sim, they are attracted. if they are too close while they have different sim, they are repelled
+* plot (sim_map(i, j), strength) for all distances between the map points (i,j)
+* we let the system evolve according to law of physics
+* mathematically, what we're doing is that we minimize the KL divergence between the sim matrices. (formula of KL and its gradient) gradient descent. it is remarkable that this sound mathematical model corresponds to this intuitive physical formulation.
+* screenshot from the paper [Hinton, Roweis, 2002]
+
+
+Limitations of SNE
+
+* First, it is not symmetric, this is solved by considering **
+* More importantly,
+
+
+
+
 Some imports.
 
 <pre data-code-language="python"
@@ -80,9 +124,9 @@ scatter(digits_proj, digits.target);
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-X = np.vstack([digits.data[digits.target==i] 
+X = np.vstack([digits.data[digits.target==i]
                for i in range(10)])
-y = np.hstack([digits.target[digits.target==i] 
+y = np.hstack([digits.target[digits.target==i]
                for i in range(10)])
 </pre>
 
