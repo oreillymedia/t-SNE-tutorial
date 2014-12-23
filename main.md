@@ -35,14 +35,10 @@ The ancestor: SNE
 * mathematically, what we're doing is that we minimize the KL divergence between the sim matrices. (formula of KL and its gradient) gradient descent. it is remarkable that this sound mathematical model corresponds to this intuitive physical formulation.
 * screenshot from the paper [Hinton, Roweis, 2002]
 
-
 Limitations of SNE
 
 * First, it is not symmetric, this is solved by considering **
 * More importantly,
-
-
-
 
 Some imports.
 
@@ -293,6 +289,37 @@ animation.write_gif("anim2.gif", fps=20)
 </pre>
 
 <img src="anim2.gif" />
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+def simpleaxis(ax):
+    ax.spines['top'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.set_yticks([]);
+    ax.get_xaxis().tick_bottom()
+    ax.set_xticks([0., .5, 1.]);
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+npoints = 1000
+plt.figure(figsize=(14, 3))
+for i, D in enumerate((2, 5, 10)):
+    u = np.random.randn(npoints, D)
+    u /= norm(u, axis=1)[:, None]
+    r = np.random.rand(npoints, 1)
+    points = u * r**(1./D)
+    ax = plt.subplot(1, 3, i+1)
+    ax.set_xlabel('Ball radius')
+    if i == 0:
+        ax.set_ylabel('Distance from\norigin')
+    simpleaxis(ax)
+    ax.hist(norm(points, axis=1), 
+            bins=np.linspace(0., 1., 50))
+    ax.set_title('D=%d' % D, loc='left')
+</pre>
 
 Equations:
 
