@@ -6,27 +6,15 @@ Computers have no problem processing that many dimensions. However, we humans ar
 
 How can we possibly reduce the dimensionality of a dataset from an arbitrary number to two or three, which is what we're doing when we visualize data on a screen?
 
-The answer lies in the observation that many real-world datasets have a low intrinsic dimensionality, even though they're embedded in a high-dimensional space. Imagine that you're shooting a panoramic landscape with your camera, while rotating around yourself. We can consider every picture as a point in a 16,000,000-dimensional space (assuming a 16 megapixels camera). Yet, the set of pictures approximately lie on a three-dimensional space (yaw, pitch, roll). This low-dimensional space is embedded in the high-dimensional space in a complex, nonlinear way. Hidden in the data, this structure can only be recovered with specific mathematical methods.
+The answer lies in the observation that many real-world datasets have a low intrinsic dimensionality, even though they're embedded in a high-dimensional space. Imagine that you're shooting a panoramic landscape with your camera, while rotating around yourself. We can consider every picture as a point in a 16,000,000-dimensional space (assuming a 16 megapixels camera). Yet, the set of pictures approximately lie in a three-dimensional space (yaw, pitch, roll). This low-dimensional space is embedded within the high-dimensional space in a complex, nonlinear way. Hidden in the data, this structure can only be recovered via specific mathematical methods.
 
-This is the topic of manifold learning, also called nonlinear dimensionality reduction, a branch of machine learning (more specifically, _unsupervised learning_). It is still an active area of research today to develop algorithms that can automatically recover a hidden structure in a high-dimensional dataset.
+This is the topic of [**manifold learning**](http://en.wikipedia.org/wiki/Nonlinear_dimensionality_reduction), also called **nonlinear dimensionality reduction**, a branch of machine learning (more specifically, _unsupervised learning_). It is still an active area of research today to develop algorithms that can automatically recover a hidden structure in a high-dimensional dataset.
 
-This post is an introduction to a popular dimensonality reduction algorithm: **t-distributed stochastic neighbor embedding (t-SNE)**. Developed by Laurens van der Maaten and Geoffrey Hinton (now working at Google), this algorithm has been successfully applied to many real-world datasets. Here, we'll see the key concepts of the method, when applied to a toy dataset (handwritten digits). We'll use Python and the scikit-learn library.
+This post is an introduction to a popular dimensonality reduction algorithm: [**t-distributed stochastic neighbor embedding (t-SNE)**](http://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding). Developed by [Laurens van der Maaten](http://lvdmaaten.github.io/) and [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/), this algorithm has been successfully applied to many real-world datasets. Here, we'll see the key concepts of the method, when applied to a toy dataset (handwritten digits). We'll use Python and the [scikit-learn](http://scikit-learn.org/stable/index.html) library.
 
 ## Visualizing handwritten digits.
 
-TODO
-(detail the dataset, nsamples, ndimensions)
-(final output of tSNE)
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-#TODO
-</pre>
-
-
-
-
+Let's first import a handful of libraries.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -49,28 +37,39 @@ from sklearn.manifold.t_sne import (_joint_probabilities,
                                     _kl_divergence)
 from sklearn.utils.extmath import _ravel
 
-# matplotlib for graphics.
+# We'll use matplotlib for graphics.
 import matplotlib.pyplot as plt
 import matplotlib.patheffects as PathEffects
 import matplotlib
 %matplotlib inline
 
-# We import seaborn for improve aesthetics.
+# We import seaborn to make nice plots.
 import seaborn as sns
 sns.set_style('darkgrid')
-sns.set_context("notebook", font_scale=1.5, rc={"lines.linewidth": 2.5})
+sns.set_palette('muted')
+sns.set_context("notebook", font_scale=1.5, 
+                rc={"lines.linewidth": 2.5})
 
 # We'll generate an animation with matplotlib and moviepy.
 from moviepy.video.io.bindings import mplfig_to_npimage
 import moviepy.editor as mpy
 </pre>
 
-Illustration on digit dataset.
+
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
 digits = load_digits()
+</pre>
+
+TODO
+(detail the dataset, nsamples, ndimensions)
+(final output of tSNE)
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
 tsne = TSNE()
 digits_proj = tsne.fit_transform(digits.data)
 </pre>
@@ -79,10 +78,12 @@ digits_proj = tsne.fit_transform(digits.data)
      data-executable="true"
      data-type="programlisting">
 def scatter(x, colors):
+    palette = np.array(sns.color_palette("hls", 10))
+    
     f = plt.figure(figsize=(8, 8))
     ax = plt.subplot(aspect='equal')
     sc = ax.scatter(x[:,0], x[:,1], lw=0, s=40,
-                    c=colors.astype(np.int));
+                    c=palette[colors.astype(np.int)]);
     plt.xlim(-25, 25);
     plt.ylim(-25, 25);
     ax.axis('off');
@@ -105,9 +106,6 @@ def scatter(x, colors):
 scatter(digits_proj, digits.target);
 </pre>
 
-
-
-
 ## Mathematical framework
 
 Let's explain how the algorithm works. First, a few definitions.
@@ -120,17 +118,13 @@ How do we choose the positions of the map points? We want to conserve the struct
 
 <span class="math-tex" data-type="tex">\\(p_{j|i} = \frac{\exp\left(-\left| x_i - x_j\right|^2 \big/ 2\sigma_i^2\right)}{\displaystyle\sum_{k \neq i} \exp\left(-\left| x_i - x_k\right|^2 \big/ 2\sigma_i^2\right)}\\)</span>
 
-This measures how close $x_j$ is from $x_i$, considering a Gaussian distribution around $x_i$ with a given variance $\sigma_i^2$. This variance is different for every point; it is chosen such that points in dense areas are given a smaller variance than points in sparse areas.
+This measures how close <span class="math-tex" data-type="tex">\\(x_j\\)</span> is from <span class="math-tex" data-type="tex">\\(x_i\\)</span>, considering a Gaussian distribution around <span class="math-tex" data-type="tex">\\(x_i\\)</span> with a given variance <span class="math-tex" data-type="tex">\\(\sigma_i^2\\)</span>. This variance is different for every point; it is chosen such that points in dense areas are given a smaller variance than points in sparse areas.
 
 Now, we define the similarity as a symmetrized version of the conditional similarity:
 
-$$p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}$$
+<span class="math-tex" data-type="tex">\\(p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}\\)</span>
 
 We obtain a similarity matrix for our original dataset.
-
-
-
-
 
 <pre data-code-language="python"
      data-executable="true"
@@ -139,12 +133,6 @@ X = np.vstack([digits.data[digits.target==i]
                for i in range(10)])
 y = np.hstack([digits.target[digits.target==i]
                for i in range(10)])
-</pre>
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-#X = scale(X)
 </pre>
 
 <pre data-code-language="python"
@@ -175,63 +163,53 @@ P_binary_s = squareform(P_binary)
      data-executable="true"
      data-type="programlisting">
 plt.figure(figsize=(12, 4))
+pal = sns.light_palette("blue", as_cmap=True)
 
 plt.subplot(131)
-plt.imshow(D, interpolation='none')
+plt.imshow(D[::10, ::10], interpolation='none', cmap=pal)
 plt.axis('off')
 plt.title("Distance matrix", fontdict={'fontsize': 16})
 
 plt.subplot(132)
-plt.imshow(P_constant, interpolation='none')
+plt.imshow(P_constant[::10, ::10], interpolation='none', cmap=pal)
 plt.axis('off')
 plt.title("$p_{j|i}$ (constant sigma)", fontdict={'fontsize': 16})
 
 plt.subplot(133)
-plt.imshow(P_binary_s, interpolation='none')
+plt.imshow(P_binary_s[::10, ::10], interpolation='none', cmap=pal)
 plt.axis('off')
 plt.title("$p_{j|i}$ (binary search sigma)", fontdict={'fontsize': 16});
 </pre>
 
-
-
-
-
-
-
 Let's also define a similarity matrix for our map points.
 
-$$q_{ij} = \frac{f(\left| x_i - x_j\right|)}{\displaystyle\sum_{k \neq i} f(\left| x_i - x_k\right|)} \quad \textrm{with} \, f(z) = \frac{1}{1+z^2}.$$
+<span class="math-tex" data-type="tex">\\(q_{ij} = \frac{f(\left| x_i - x_j\right|)}{\displaystyle\sum_{k \neq i} f(\left| x_i - x_k\right|)} \quad \textrm{with} \, f(z) = \frac{1}{1+z^2}.\\)</span>
 
 This is the same idea as for the data points, but with a different distribution (t-Student, or Cauchy distribution, instead of a Gaussian distribution). We'll elaborate on this choice later.
 
-Whereas the data similarity matrix $\big(p_{ij}\big)$ is fixed, the map similarity matrix $\big(q_{ij}\big)$ depends on the map points. What we want is for these two matrices to be as close as possible. This would mean that similar data points yield similar map points.
+Whereas the data similarity matrix <span class="math-tex" data-type="tex">\\(\big(p_{ij}\big)\\)</span> is fixed, the map similarity matrix <span class="math-tex" data-type="tex">\\(\big(q_{ij}\big)\\)</span> depends on the map points. What we want is for these two matrices to be as close as possible. This would mean that similar data points yield similar map points.
 
 ## A physical analogy
 
-Let's assume that our map points are all connected with springs. The stiffness of a spring connecting points $i$ and $j$ depends on the mismatch between the similarity of the two data points and the similarity of the two map points, that is, $p_{ij} - q_{ij}$. Now, we let the system evolve according to the law of physics. If two map points are far apart while the data points are close, they are attracted together. If they are close while the data points are dissimilar, they are repelled.
+Let's assume that our map points are all connected with springs. The stiffness of a spring connecting points <span class="math-tex" data-type="tex">\\(i\\)</span> and <span class="math-tex" data-type="tex">\\(j\\)</span> depends on the mismatch between the similarity of the two data points and the similarity of the two map points, that is, <span class="math-tex" data-type="tex">\\(p_{ij} - q_{ij}\\)</span>. Now, we let the system evolve according to the law of physics. If two map points are far apart while the data points are close, they are attracted together. If they are close while the data points are dissimilar, they are repelled.
 
 The final mapping is obtained when the equilibrium is reached.
 
 ## Algorithm
 
-Remarkably, this analogy stems exactly from a natural mathematical algorithm. It corresponds to minimizing the Kullback-Leiber divergence between the two distributions $\big(p_{ij}\big)$ and $\big(q_{ij}\big)$:
+Remarkably, this analogy stems exactly from a natural mathematical algorithm. It corresponds to minimizing the Kullback-Leiber divergence between the two distributions <span class="math-tex" data-type="tex">\\(\big(p_{ij}\big)\\)</span> and <span class="math-tex" data-type="tex">\\(\big(q_{ij}\big)\\)</span>:
 
-$$KL(P||Q) = \sum_{i, j} p_{ij} \, \log \frac{p_{ij}}{q_{ij}}.$$
+<span class="math-tex" data-type="tex">\\(KL(P||Q) = \sum_{i, j} p_{ij} \, \log \frac{p_{ij}}{q_{ij}}.\\)</span>
 
 This measures the distance between our two similarity matrices.
 
 To minimize this score, we perform a gradient descent. The gradient can be computed analytically:
 
-$$\frac{\partial KL(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.$$
+<span class="math-tex" data-type="tex">\\(\frac{\partial \, K\!L(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.\\)</span>
 
-This gradient expresses the sum of all spring forces applied to map point $i$.
+This gradient expresses the sum of all spring forces applied to map point <span class="math-tex" data-type="tex">\\(i\\)</span>.
 
 Now, let's illustrate this process by creating an animation of the convergence.
-
-
-
-
-
 
 <pre data-code-language="python"
      data-executable="true"
@@ -323,7 +301,7 @@ Q = squareform(Q)
 
 f = plt.figure(figsize=(6, 6))
 ax = plt.subplot(aspect='equal')
-im = ax.imshow(Q)
+im = ax.imshow(Q, interpolation='none', cmap=pal)
 plt.axis('tight');
 plt.axis('off');
 </pre>
@@ -346,17 +324,9 @@ animation.write_gif("anim2.gif", fps=20)
 
 <img src="anim2.gif" />
 
-
-
-
-
-
-
-
 ## The t-Student distribution
 
-Let's now explain the choice of the t-Student distribution for the map points, while a normal distribution is used for the data points. It is well known that the volume of the $N$-dimensional ball of radius $r$ scales as $r^N$. When $N$ is large, if we pick random points uniformly in the ball, most points will be close to the surface, and very few will be near the center.
-
+Let's now explain the choice of the t-Student distribution for the map points, while a normal distribution is used for the data points. It is well known that the volume of the <span class="math-tex" data-type="tex">\\(N\\)</span>-dimensional ball of radius <span class="math-tex" data-type="tex">\\(r\\)</span> scales as <span class="math-tex" data-type="tex">\\(r^N\\)</span>. When <span class="math-tex" data-type="tex">\\(N\\)</span> is large, if we pick random points uniformly in the ball, most points will be close to the surface, and very few will be near the center.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -382,13 +352,9 @@ for i, D in enumerate((2, 5, 10)):
     ax.set_title('D=%d' % D, loc='left')
 </pre>
 
+When reducing the dimensionality of a dataset, if we used the same Gaussian distribution for the data points and the map points, this mathematical fact would result in an _imbalance_ among the neighbors of a given point. This imbalance would lead to an excess of attraction forces and a sometimes unappealing mapping. This is actually what happens in the original SNE algorithm, by Hinton and Roweis (2002).
 
-When reducing the dimensionality of a dataset, if we used the same Gaussian distribution for the data points and the map points, this mathematical fact would result in an *imbalance* among the neighbors of a given point. This imbalance would lead to an excess of attraction forces and a sometimes unappealing mapping. This is actually what happens in the original SNE algorithm, by Hinton and Roweis (2002).
-
-The t-SNE algorithm works around this problem by using a t-Student with one degree of freedom (or Cauchy) distribution for the map points. This distribution has a much heavier tail than the Gaussian distribution, which *compensates* the original imbalance. For a given data similarity between two data points, the two corresponding map points will need to be much further apart in order for their similarity to match the data similarity.
-
-
-
+The t-SNE algorithm works around this problem by using a t-Student with one degree of freedom (or Cauchy) distribution for the map points. This distribution has a much heavier tail than the Gaussian distribution, which _compensates_ the original imbalance. For a given data similarity between two data points, the two corresponding map points will need to be much further apart in order for their similarity to match the data similarity.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -401,14 +367,11 @@ plt.plot(z, cauchy, label='Cauchy distribution');
 plt.legend();
 </pre>
 
-
-
-
 ## Conclusion
 
 The t-SNE algorithm provides an effective method to visualize a complex dataset. It successfully uncovers hidden structures in the data, exposing natural clusters or smooth nonlinear variations along the dimensions. It has been implemented in many languages, including Python, and it can be easily used thanks to the scikit-learn library.
 
-The references below link to some optimizations and improvements that can be made to the algorithm and implementations. In particular, the algorithm described here is quadratic in the number of samples, which makes it unscalable to large datasets. One could for example obtain an $O(N \log N)$ complexity by using the Barnes-Hut algorithm to accelerate the N-body simulation via a quadtree or an octree.
+The references below link to some optimizations and improvements that can be made to the algorithm and implementations. In particular, the algorithm described here is quadratic in the number of samples, which makes it unscalable to large datasets. One could for example obtain an <span class="math-tex" data-type="tex">\\(O(N \log N)\\)</span> complexity by using the Barnes-Hut algorithm to accelerate the N-body simulation via a quadtree or an octree.
 
 ## References
 
