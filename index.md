@@ -46,7 +46,7 @@ line, = ax.plot(xx, zz(0), lw=3)
 # ANIMATE WITH MOVIEPY (UPDATE THE CURVE FOR EACH t). MAKE A GIF.
 
 def make_frame_mpl(t):
-    line.set_ydata( zz(2*np.pi*t/duration))  # <= Update the curve
+    line.set_ydata( zz(2*np.pi*t/duration))  # = Update the curve
     return mplfig_to_npimage(fig_mpl) # RGB image of the figure
 
 animation =mpy.VideoClip(make_frame_mpl, duration=duration)
