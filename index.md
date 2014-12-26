@@ -38,7 +38,7 @@ def video(fname, mimetype):
     """
     from IPython.display import HTML
     video_encoded = open(fname, "rb").read().encode("base64")
-    video_tag = '<video controls alt="test" src="data:video/{0};base64,{1}">'.format(mimetype, video_encoded)
+    video_tag = '<video controls alt="test" src="data:video/{0};base64,{1}">Atl text</video>'.format(mimetype, video_encoded)
     return HTML(data=video_tag)
 
 
@@ -63,8 +63,7 @@ animation =mpy.VideoClip(make_frame_mpl, duration=duration)
 animation.write_videofile("sinc_mpl.mp4", fps=20)
 
 
-video('sinc_mpl.mp4', 'mp4')
-
+video('/home/pyxie/sinc_mpl.mp4', 'mp4')
 
 </pre>
 
