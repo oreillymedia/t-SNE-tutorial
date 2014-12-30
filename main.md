@@ -12,7 +12,7 @@ This is the topic of [**manifold learning**](http://en.wikipedia.org/wiki/Nonlin
 
 This post is an introduction to a popular dimensonality reduction algorithm: [**t-distributed stochastic neighbor embedding (t-SNE)**](http://en.wikipedia.org/wiki/T-distributed_stochastic_neighbor_embedding). Developed by [Laurens van der Maaten](http://lvdmaaten.github.io/) and [Geoffrey Hinton](http://www.cs.toronto.edu/~hinton/), this algorithm has been successfully applied to many real-world datasets. Here, we'll follow the original paper and describe the key mathematical concepts of the method, when applied to a toy dataset (handwritten digits). We'll use Python and the [scikit-learn](http://scikit-learn.org/stable/index.html) library.
 
-## Visualizing handwritten digits.
+## Visualizing handwritten digits
 
 Let's first import a few libraries.
 
@@ -55,7 +55,7 @@ from moviepy.video.io.bindings import mplfig_to_npimage
 import moviepy.editor as mpy
 </pre>
 
-Now we load the classic *handwritten digits* datasets. It contains 1797 images with <span class="math-tex" data-type="tex">\\(8*8=64\\)</span> pixels each.
+Now we load the classic [_handwritten digits_](http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html#sklearn.datasets.load_digits) datasets. It contains 1797 images with <span class="math-tex" data-type="tex">\\(8*8=64\\)</span> pixels each.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -83,9 +83,12 @@ for i in range(ncols * nrows):
     ax.matshow(digits.images[i,...])
     plt.xticks([]); plt.yticks([])
     plt.title(digits.target[i])
+plt.savefig('images/digits.png', dpi=150)
 </pre>
 
-Now let's run the t-SNE algorithm on the dataset. It just take one line with scikit-learn.
+![Digits](images/digits.png)
+
+Now let's run the t-SNE algorithm on the dataset. It just takes one line with scikit-learn.
 
 <pre data-code-language="python"
      data-executable="true"
@@ -93,14 +96,16 @@ Now let's run the t-SNE algorithm on the dataset. It just take one line with sci
 digits_proj = TSNE().fit_transform(digits.data)
 </pre>
 
-Here is a utility function used to display the transformed dataset.
+Here is a utility function used to display the transformed dataset. The color of each point refers to the actual digit (of course, this information was not used by the dimensionality reduction algorithm).
 
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
 def scatter(x, colors):
+    # We choose a color palette with seaborn.
     palette = np.array(sns.color_palette("hls", 10))
-    
+
+    # We create a scatter plot.
     f = plt.figure(figsize=(8, 8))
     ax = plt.subplot(aspect='equal')
     sc = ax.scatter(x[:,0], x[:,1], lw=0, s=40,
@@ -108,9 +113,12 @@ def scatter(x, colors):
     plt.xlim(-25, 25)
     plt.ylim(-25, 25)
     ax.axis('off')
+    ax.axis('tight')
 
+    # We add the labels for each digit.
     txts = []
     for i in range(10):
+        # Position of each label.
         xtext, ytext = np.median(x[colors == i, :], axis=0)
         txt = ax.text(xtext, ytext, str(i), fontsize=24)
         txt.set_path_effects([
@@ -121,15 +129,22 @@ def scatter(x, colors):
     return f, ax, sc, txts
 </pre>
 
+Here is the result.
+
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-scatter(digits_proj, digits.target);
+scatter(digits_proj, digits.target)
+plt.savefig('images/digits_tsne.png', dpi=120)
 </pre>
+
+![Transformed digits with t-SNE](images/digits_tsne.png)
+
+We observe that the images corresponding to the different digits are clearly separated into different clusters of points.
 
 ## Mathematical framework
 
-Now, let's explain how the algorithm works. First, a few definitions.
+Let's explain how the algorithm works. First, a few definitions.
 
 A **data point** is a point <span class="math-tex" data-type="tex">\\(x_i\\)</span> in the original **data space** <span class="math-tex" data-type="tex">\\(\mathbf{R}^D\\)</span>, where <span class="math-tex" data-type="tex">\\(D=64\\)</span> is the **dimensionality** of the data space. Every point is an image of a handwritten digit here. There are <span class="math-tex" data-type="tex">\\(N=1797\\)</span> points.
 
@@ -232,7 +247,7 @@ This measures the distance between our two similarity matrices.
 
 To minimize this score, we perform a gradient descent. The gradient can be computed analytically:
 
-<span class="math-tex" data-type="tex">\\(\frac{\partial \, K\!L(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) u_{ij} \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.\\)</span>
+<span class="math-tex" data-type="tex">\\(\frac{\partial \, K!L(P || Q)}{\partial y_i} = 4 \sum_j (p_{ij} - q_{ij}) g\left( \left| x_i - x_j\right| \right) u_{ij} \quad \textrm{where} \, g(z) = \frac{z}{1+z^2}.\\)</span>
 
 Here, <span class="math-tex" data-type="tex">\\(u_{ij}\\)</span> is a unit vector going from <span class="math-tex" data-type="tex">\\(y_j\\)</span> to <span class="math-tex" data-type="tex">\\(y_i\\)</span>. This gradient expresses the sum of all spring forces applied to map point <span class="math-tex" data-type="tex">\\(i\\)</span>.
 
@@ -258,7 +273,7 @@ def _gradient_descent(objective, p0, it, n_iter, n_iter_without_progress=30,
     for i in range(it, n_iter):
         # We append the current position.
         positions.append(p.copy())
-        
+
         new_error, grad = objective(p, *args)
         error_diff = np.abs(new_error - error)
         error = new_error
