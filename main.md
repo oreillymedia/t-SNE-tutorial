@@ -49,7 +49,7 @@ import matplotlib
 import seaborn as sns
 sns.set_style('darkgrid')
 sns.set_palette('muted')
-sns.set_context("notebook", font_scale=1.5, 
+sns.set_context("notebook", font_scale=1.5,
                 rc={"lines.linewidth": 2.5})
 
 # We'll generate an animation with matplotlib and moviepy.
@@ -95,7 +95,17 @@ Now let's run the t-SNE algorithm on the dataset. It just takes one line with sc
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-digits_proj = TSNE(random_state=RS).fit_transform(digits.data)
+# We first reorder the data points according to the handwritten numbers.
+X = np.vstack([digits.data[digits.target==i]
+               for i in range(10)])
+y = np.hstack([digits.target[digits.target==i]
+               for i in range(10)])
+</pre>
+
+<pre data-code-language="python"
+     data-executable="true"
+     data-type="programlisting">
+digits_proj = TSNE(random_state=RS).fit_transform(X)
 </pre>
 
 Here is a utility function used to display the transformed dataset. The color of each point refers to the actual digit (of course, this information was not used by the dimensionality reduction algorithm).
@@ -136,7 +146,7 @@ Here is the result.
 <pre data-code-language="python"
      data-executable="true"
      data-type="programlisting">
-scatter(digits_proj, digits.target)
+scatter(digits_proj, y)
 plt.savefig('images/digits_tsne.png', dpi=120)
 </pre>
 
@@ -165,19 +175,6 @@ Now, we define the similarity as a symmetrized version of the conditional simila
 We obtain a **similarity matrix** for our original dataset. What does this matrix look like?
 
 ## Similarity matrix
-
-Before showing the matrix, let's reorder the data points according to the handwritten number.
-
-<pre data-code-language="python"
-     data-executable="true"
-     data-type="programlisting">
-# Dataset.
-X = np.vstack([digits.data[digits.target==i]
-               for i in range(10)])
-# Target (digit).
-y = np.hstack([digits.target[digits.target==i]
-               for i in range(10)])
-</pre>
 
 The following function computes the similarity with a constant <span class="math-tex" data-type="tex">\\(\sigma\\)</span>.
 
@@ -248,8 +245,16 @@ The final mapping is obtained when the equilibrium is reached.
 
 Here is an illustration of a dynamic graph layout based on a similar idea. Nodes are connected via springs and the system evolves according to law of physics (example by [Mike Bostock](http://bl.ocks.org/mbostock/4062045)).
 
-<iframe src="http://bl.ocks.org/rossant/raw/f06184034ba66a0bd06a/" 
+<iframe src="http://bl.ocks.org/rossant/raw/f06184034ba66a0bd06a/"
         style="border: 0; width: 620px; height: 440px; margin: 0; padding: 0;" />
+
+
+
+
+
+
+
+
 
 ## Algorithm
 
@@ -415,7 +420,7 @@ for i, D in enumerate((2, 5, 10)):
     ax.hist(norm(points, axis=1),
             bins=np.linspace(0., 1., 50))
     ax.set_title('D=%d' % D, loc='left')
-plt.savefig('images/spheres.png', dpi=100)
+plt.savefig('images/spheres.png', dpi=100, bbox_inches='tight')
 </pre>
 
 ![Spheres](images/spheres.png)
@@ -433,7 +438,7 @@ cauchy = 1/(1+z**2)
 plt.plot(z, gauss, label='Gaussian distribution')
 plt.plot(z, cauchy, label='Cauchy distribution')
 plt.legend()
-plt.savefig('images/distributions.png', dpi=120)
+plt.savefig('images/distributions.png', dpi=100)
 </pre>
 
 ![Gaussian and Cauchy distributions](images/distributions.png)
