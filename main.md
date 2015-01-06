@@ -164,13 +164,13 @@ A **map point** is a point <span class="math-tex" data-type="tex">\\(y_i\\)</spa
 
 How do we choose the positions of the map points? We want to conserve the structure of the data. More specifically, if two data points are close together, we want the two corresponding map points to be close too. Let's <span class="math-tex" data-type="tex">\\(\left| x_i - x_j \right|\\)</span> be the Euclidean distance between two data points, and <span class="math-tex" data-type="tex">\\(\left| y_i - y_j \right|\\)</span> the distance between the map points. We first define a conditional similarity between the two data points:
 
-<span class="math-tex" data-type="tex">\\(p_{j|i} = \frac{\exp\left(-\left| x_i - x_j\right|^2 \big/ 2\sigma_i^2\right)}{\displaystyle\sum_{k \neq i} \exp\left(-\left| x_i - x_k\right|^2 \big/ 2\sigma_i^2\right)}\\)</span>
+<span class="math-tex" data-type="tex">$$\(p_{j|i} = \frac{\exp\left(-\left| x_i - x_j\right|^2 \big/ 2\sigma_i^2\right)}{\displaystyle\sum_{k \neq i} \exp\left(-\left| x_i - x_k\right|^2 \big/ 2\sigma_i^2\right)}$$\)</span>
 
 This measures how close <span class="math-tex" data-type="tex">\\(x_j\\)</span> is from <span class="math-tex" data-type="tex">\\(x_i\\)</span>, considering a **Gaussian distribution** around <span class="math-tex" data-type="tex">\\(x_i\\)</span> with a given variance <span class="math-tex" data-type="tex">\\(\sigma_i^2\\)</span>. This variance is different for every point; it is chosen such that points in dense areas are given a smaller variance than points in sparse areas. The original paper details how this variance is computed exactly.
 
 Now, we define the similarity as a symmetrized version of the conditional similarity:
 
-<span class="math-tex" data-type="tex">\\(p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}\\)</span>
+<span class="math-tex" data-type="tex">$$(p_{ij} = \frac{p_{j|i} + p_{i|j}}{2N}$$)</span>
 
 We obtain a **similarity matrix** for our original dataset. What does this matrix look like?
 
