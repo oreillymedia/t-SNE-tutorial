@@ -85,7 +85,7 @@ for i in range(ncols * nrows):
     ax.matshow(digits.images[i,...])
     plt.xticks([]); plt.yticks([])
     plt.title(digits.target[i])
-plt.savefig('images/digits.png', dpi=150)
+plt.savefig('images/digits-generated.png', dpi=150)
 </pre>
 
 ![Digits](images/digits.png)
@@ -147,7 +147,7 @@ Here is the result.
      data-executable="true"
      data-type="programlisting">
 scatter(digits_proj, y)
-plt.savefig('images/digits_tsne.png', dpi=120)
+plt.savefig('images/digits_tsne-generated.png', dpi=120)
 </pre>
 
 ![Transformed digits with t-SNE](images/digits_tsne.png)
@@ -224,7 +224,7 @@ plt.subplot(133)
 plt.imshow(P_binary_s[::10, ::10], interpolation='none', cmap=pal)
 plt.axis('off')
 plt.title("$p_{j|i}$ (variable $\sigma$)", fontdict={'fontsize': 16})
-plt.savefig('images/similarity.png', dpi=120)
+plt.savefig('images/similarity-generated.png', dpi=120)
 </pre>
 
 We can already observe the 10 groups in the data, corresponding to the 10 numbers.
@@ -422,7 +422,7 @@ for i, D in enumerate((2, 5, 10)):
     ax.hist(norm(points, axis=1),
             bins=np.linspace(0., 1., 50))
     ax.set_title('D=%d' % D, loc='left')
-plt.savefig('images/spheres.png', dpi=100, bbox_inches='tight')
+plt.savefig('images/spheres-generated.png', dpi=100, bbox_inches='tight')
 </pre>
 
 ![Spheres](images/spheres.png)
@@ -440,7 +440,7 @@ cauchy = 1/(1+z**2)
 plt.plot(z, gauss, label='Gaussian distribution')
 plt.plot(z, cauchy, label='Cauchy distribution')
 plt.legend()
-plt.savefig('images/distributions.png', dpi=100)
+plt.savefig('images/distributions-generated.png', dpi=100)
 </pre>
 
 ![Gaussian and Cauchy distributions](images/distributions.png)
