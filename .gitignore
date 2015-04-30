@@ -1,3 +1,5 @@
 .ipynb_checkpoints
 *.pyc
 .DS_Store
+.awspublish-*
+compiled
