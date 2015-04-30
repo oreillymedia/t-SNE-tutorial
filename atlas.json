@@ -1,7 +1,7 @@
 {
   "branch": "master",
   "files": [
-    "main.md"
+    "README.md"
   ],
   "formats": {
     "pdf": {
@@ -29,10 +29,15 @@
       "toc": false,
       "syntaxhighlighting": false,
       "show_comments": false,
-      "consolidated": false
+      "consolidated": false,
+      "javascripts": [
+        "http://rawgit.com/oreillymedia/thebe/master/static/main-built.js",
+        "page.js"
+      ]
     }
   },
   "theme": "oreillymedia/jupyter_theme",
   "title": "An illustrated introduction to the t-SNE algorithm",
-  "github_url": "https://github.com/oreillymedia/ipython-tutorial-content"
+  "github_url": "https://github.com/oreillymedia/ipython-tutorial-content",
+  "uuid": "b0c6f45f-cc4f-4c32-9a70-c3c4adc54c70"
 }
